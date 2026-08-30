@@ -17,7 +17,7 @@ st.set_page_config(
 
 
 # ============================================================
-# DATEIEN
+# DATEIPFADE
 # ============================================================
 
 BASE_PATH = Path(__file__).parent
@@ -31,6 +31,26 @@ def find_file(names):
     return None
 
 
+# ============================================================
+# LOGO
+# ============================================================
+
+logo_path = find_file([
+    "logo.png",
+    "Logo.png",
+    "countorbreak_logo.png",
+    "CountOrBreak_logo.png",
+    "countorbreak.png",
+    "CountOrBreak.png",
+    "cb_logo.png",
+    "CB_Logo.png",
+])
+
+
+# ============================================================
+# RECHNER-ICON
+# ============================================================
+
 calculator_path = find_file([
     "icon_rechner.png",
     "rechner.png",
@@ -39,26 +59,21 @@ calculator_path = find_file([
     "positionsgrößenrechner.png",
 ])
 
-logo_path = find_file([
-    "countorbreak_logo.png",
-    "CountOrBreak_logo.png",
-    "logo.png",
-    "Logo.png",
-])
-
 
 def image_base64(path):
     if path is None:
         return None
 
     try:
-        return base64.b64encode(path.read_bytes()).decode("utf-8")
+        return base64.b64encode(
+            path.read_bytes()
+        ).decode("utf-8")
     except Exception:
         return None
 
 
-calculator_image = image_base64(calculator_path)
 logo_image = image_base64(logo_path)
+calculator_image = image_base64(calculator_path)
 
 
 # ============================================================
@@ -175,8 +190,8 @@ st.html(
 
 
     .cb-logo-box {
-        width: 78px;
-        height: 78px;
+        width: 95px;
+        height: 95px;
 
         display: flex;
         align-items: center;
@@ -195,13 +210,33 @@ st.html(
         box-shadow:
             inset 0 0 22px rgba(201,163,90,0.04),
             0 0 16px rgba(201,163,90,0.08);
+
+        overflow: hidden;
     }
 
 
     .cb-logo-box img {
-        width: 60px;
-        height: 60px;
+        width: 82px;
+        height: 82px;
+
         object-fit: contain;
+    }
+
+
+    .cb-logo-fallback {
+        color: var(--gold-light);
+
+        font-family:
+            Georgia,
+            serif;
+
+        font-size: 29px;
+
+        font-weight: 600;
+
+        letter-spacing: 0.04em;
+
+        text-align: center;
     }
 
 
@@ -216,7 +251,8 @@ st.html(
             Georgia,
             serif;
 
-        font-size: clamp(30px, 4vw, 51px);
+        font-size: clamp(27px, 3.7vw, 48px);
+
         font-weight: 500;
 
         letter-spacing: 0.075em;
@@ -250,6 +286,7 @@ st.html(
         padding: 11px 17px;
 
         border: 1px solid rgba(167,125,53,0.65);
+
         border-radius: 8px;
 
         color: var(--gold-light);
@@ -267,6 +304,7 @@ st.html(
 
     .cb-top-line {
         width: 100%;
+
         height: 1px;
 
         margin: 8px 0 25px;
@@ -316,7 +354,7 @@ st.html(
 
 
     /* ========================================================
-       SECTIONS
+       SECTION TITLES
        ======================================================== */
 
     .cb-section-title {
@@ -330,6 +368,7 @@ st.html(
             serif;
 
         font-size: 22px;
+
         font-weight: 500;
 
         letter-spacing: 0.065em;
@@ -343,6 +382,7 @@ st.html(
 
     .cb-divider {
         width: 100%;
+
         height: 1px;
 
         margin: 20px 0 24px;
@@ -391,7 +431,7 @@ st.html(
 
 
     /* ========================================================
-       LONG / SHORT
+       RICHTUNG
        ======================================================== */
 
     .cb-direction {
@@ -501,6 +541,7 @@ st.html(
 
     .cb-result-small {
         color: #9D958A;
+
         font-size: 13px;
     }
 
@@ -513,6 +554,7 @@ st.html(
         display: flex;
 
         align-items: center;
+
         justify-content: space-between;
 
         gap: 20px;
@@ -552,6 +594,7 @@ st.html(
 
     .cb-stat-icon {
         width: 38px;
+
         height: 38px;
 
         min-width: 38px;
@@ -559,6 +602,7 @@ st.html(
         display: flex;
 
         align-items: center;
+
         justify-content: center;
 
         border:
@@ -574,7 +618,9 @@ st.html(
 
     .cb-stat-sub {
         color: #878078;
+
         font-size: 12px;
+
         margin-top: 3px;
     }
 
@@ -631,6 +677,7 @@ st.html(
         display: flex;
 
         align-items: center;
+
         justify-content: space-between;
 
         padding: 8px 0;
@@ -651,6 +698,7 @@ st.html(
 
     .cb-margin-value {
         color: #DDD2C0;
+
         font-size: 14px;
     }
 
@@ -741,49 +789,64 @@ st.html(
             padding-right: 0.65rem;
         }
 
+
         .cb-shell {
             padding: 17px;
         }
 
+
         .cb-header {
             flex-direction: column;
+
             align-items: flex-start;
         }
 
+
         .cb-logo-box {
+            width: 75px;
+
+            height: 75px;
+        }
+
+
+        .cb-logo-box img {
             width: 65px;
+
             height: 65px;
         }
 
-        .cb-logo-box img {
-            width: 50px;
-            height: 50px;
-        }
 
         .cb-title {
             font-size: 30px;
         }
 
+
         .cb-subtitle {
             font-size: 12px;
+
             letter-spacing: 0.10em;
         }
+
 
         .cb-main-result {
             padding: 21px 15px;
         }
 
+
         .cb-result-value {
             font-size: 40px;
         }
+
 
         .cb-stat {
             padding: 13px;
         }
 
+
         .cb-stat-value {
             font-size: 16px;
         }
+
     }
 
     </style>
@@ -792,27 +855,24 @@ st.html(
 
 
 # ============================================================
-# HEADER
+# HEADER LOGO
 # ============================================================
 
-if calculator_image:
+if logo_image:
 
-    calculator_html = f"""
+    logo_html = f"""
     <img
-        src="data:image/png;base64,{calculator_image}"
-        alt="Positionsgrößenrechner"
+        src="data:image/png;base64,{logo_image}"
+        alt="CountOrBreak Logo"
     >
     """
 
 else:
 
-    calculator_html = """
-    <span style="
-        color:#DDBB72;
-        font-size:38px;
-    ">
-        ♢
-    </span>
+    logo_html = """
+    <div class="cb-logo-fallback">
+        CB
+    </div>
     """
 
 
@@ -823,7 +883,7 @@ st.html(
         <div class="cb-brand">
 
             <div class="cb-logo-box">
-                {calculator_html}
+                {logo_html}
             </div>
 
             <div>
@@ -840,11 +900,13 @@ st.html(
 
         </div>
 
+
         <div class="cb-guide">
             ⓘ &nbsp; Risiko zuerst. Gewinne danach.
         </div>
 
     </div>
+
 
     <div class="cb-top-line"></div>
     """
@@ -852,10 +914,11 @@ st.html(
 
 
 # ============================================================
-# HAUPTBOX
+# HAUPTBOX START
 # ============================================================
 
 st.html('<div class="cb-shell">')
+
 
 left, right = st.columns(
     [1.04, 1],
@@ -870,7 +933,7 @@ left, right = st.columns(
 with left:
 
     # --------------------------------------------------------
-    # MARKT
+    # 1. MARKT
     # --------------------------------------------------------
 
     st.html(
@@ -896,19 +959,25 @@ with left:
     )
 
 
-    default_instrument = ""
-
     if market == "Forex CFD":
+
         default_instrument = "EUR/USD"
 
     elif market == "Index CFD":
+
         default_instrument = "NAS100"
 
     elif market == "Krypto CFD":
+
         default_instrument = "BTC/USD"
 
     elif market == "Rohstoff CFD":
+
         default_instrument = "XAU/USD"
+
+    else:
+
+        default_instrument = ""
 
 
     instrument = st.text_input(
@@ -918,19 +987,17 @@ with left:
     )
 
 
-    if market != "Futures":
-
-        st.caption(
-            "Pepperstone CFD · Bitte aktuelle Produktspezifikationen "
-            "für das gewählte Instrument prüfen."
-        )
+    st.caption(
+        "Pepperstone CFD · Bitte aktuelle Produktspezifikationen "
+        "des gewählten Instruments prüfen."
+    )
 
 
     st.html('<div class="cb-divider"></div>')
 
 
     # --------------------------------------------------------
-    # RICHTUNG
+    # 2. TRADE-RICHTUNG
     # --------------------------------------------------------
 
     st.html(
@@ -975,7 +1042,7 @@ with left:
 
 
     # --------------------------------------------------------
-    # KONTO & RISIKO
+    # 3. KONTO & RISIKO
     # --------------------------------------------------------
 
     st.html(
@@ -1013,7 +1080,11 @@ with left:
         )
 
 
-    max_risk = account_size * risk_percent / 100
+    max_risk = (
+        account_size
+        * risk_percent
+        / 100
+    )
 
 
     st.number_input(
@@ -1030,7 +1101,7 @@ with left:
 
 
     # --------------------------------------------------------
-    # TRADE DATEN
+    # 4. TRADE-DATEN
     # --------------------------------------------------------
 
     st.html(
@@ -1048,13 +1119,17 @@ with left:
     if market == "Forex CFD":
 
         default_entry = 1.17000
+
         price_step = 0.00001
+
         price_format = "%.5f"
 
     else:
 
         default_entry = 100.0
+
         price_step = 0.10
+
         price_format = "%.4f"
 
 
@@ -1072,16 +1147,27 @@ with left:
     if direction == "Long":
 
         if market == "Forex CFD":
+
             default_stop = 1.16500
+
         else:
-            default_stop = max(entry_price * 0.98, 0.00000001)
+
+            default_stop = max(
+                entry_price * 0.98,
+                0.00000001
+            )
 
     else:
 
         if market == "Forex CFD":
+
             default_stop = 1.17500
+
         else:
-            default_stop = entry_price * 1.02
+
+            default_stop = (
+                entry_price * 1.02
+            )
 
 
     with price_col_2:
@@ -1105,19 +1191,25 @@ with left:
     )
 
 
-    price_distance = abs(entry_price - stop_loss)
+    price_distance = abs(
+        entry_price - stop_loss
+    )
 
-    stop_percent = divide(
-        price_distance,
-        entry_price,
-    ) * 100
+
+    stop_percent = (
+        divide(
+            price_distance,
+            entry_price
+        )
+        * 100
+    )
 
 
     st.html('<div class="cb-divider"></div>')
 
 
     # --------------------------------------------------------
-    # INSTRUMENT DETAILS
+    # 5. INSTRUMENT DETAILS
     # --------------------------------------------------------
 
     st.html(
@@ -1130,7 +1222,7 @@ with left:
 
 
     # ========================================================
-    # FOREX
+    # FOREX CFD
     # ========================================================
 
     if market == "Forex CFD":
@@ -1187,20 +1279,26 @@ with left:
 
         pips = divide(
             price_distance,
-            pip_size,
+            pip_size
         )
 
 
-        risk_per_lot = pips * pip_value
+        risk_per_lot = (
+            pips
+            * pip_value
+        )
 
 
         position_lots = divide(
             max_risk,
-            risk_per_lot,
+            risk_per_lot
         )
 
 
-        position_units = position_lots * lot_size
+        position_units = (
+            position_lots
+            * lot_size
+        )
 
 
         position_value = (
@@ -1211,7 +1309,7 @@ with left:
 
         margin_required = divide(
             position_value,
-            leverage,
+            leverage
         )
 
 
@@ -1257,22 +1355,25 @@ with left:
 
         ticks = divide(
             price_distance,
-            tick_size,
+            tick_size
         )
 
 
         risk_per_contract = (
-            ticks * tick_value
+            ticks
+            * tick_value
         )
 
 
         position_contracts = divide(
             max_risk,
-            risk_per_contract,
+            risk_per_contract
         )
 
 
-        position_units = position_contracts
+        position_units = (
+            position_contracts
+        )
 
 
         position_value = (
@@ -1283,12 +1384,12 @@ with left:
 
         margin_required = divide(
             position_value,
-            leverage,
+            leverage
         )
 
 
     # ========================================================
-    # ANDERE CFDs
+    # SONSTIGE CFD
     # ========================================================
 
     else:
@@ -1335,7 +1436,7 @@ with left:
 
         position_units = divide(
             max_risk,
-            risk_per_unit,
+            risk_per_unit
         )
 
 
@@ -1348,7 +1449,7 @@ with left:
 
         margin_required = divide(
             position_value,
-            leverage,
+            leverage
         )
 
 
@@ -1357,12 +1458,14 @@ with left:
     # ========================================================
 
     valid = True
+
     error_message = ""
 
 
     if entry_price <= 0:
 
         valid = False
+
         error_message = (
             "Der Einstiegskurs muss größer als 0 sein."
         )
@@ -1371,6 +1474,7 @@ with left:
     elif stop_loss <= 0:
 
         valid = False
+
         error_message = (
             "Der Stop-Loss muss größer als 0 sein."
         )
@@ -1379,23 +1483,32 @@ with left:
     elif price_distance <= 0:
 
         valid = False
+
         error_message = (
             "Einstieg und Stop-Loss dürfen nicht identisch sein."
         )
 
 
-    elif direction == "Long" and stop_loss >= entry_price:
+    elif (
+        direction == "Long"
+        and stop_loss >= entry_price
+    ):
 
         valid = False
+
         error_message = (
             "Bei Long muss der Stop-Loss unterhalb "
             "des Einstiegs liegen."
         )
 
 
-    elif direction == "Short" and stop_loss <= entry_price:
+    elif (
+        direction == "Short"
+        and stop_loss <= entry_price
+    ):
 
         valid = False
+
         error_message = (
             "Bei Short muss der Stop-Loss oberhalb "
             "des Einstiegs liegen."
@@ -1476,7 +1589,7 @@ with right:
 
 
         # ----------------------------------------------------
-        # RISIKO
+        # MAXIMALES RISIKO
         # ----------------------------------------------------
 
         st.html(
@@ -1494,7 +1607,8 @@ with right:
                         Max. Verlust bei Stop-Loss
 
                         <div class="cb-stat-sub">
-                            {number(risk_percent, 2)} % des Kontos
+                            {number(risk_percent, 2)} %
+                            des Kontos
                         </div>
 
                     </div>
@@ -1511,7 +1625,7 @@ with right:
 
 
         # ----------------------------------------------------
-        # STOP DISTANZ
+        # STOP-DISTANZ
         # ----------------------------------------------------
 
         if market == "Forex CFD":
@@ -1548,7 +1662,8 @@ with right:
                         Stop-Loss-Abstand
 
                         <div class="cb-stat-sub">
-                            {number(stop_percent, 2)} % vom Einstieg
+                            {number(stop_percent, 2)} %
+                            vom Einstieg
                         </div>
 
                     </div>
@@ -1598,6 +1713,7 @@ with right:
         # ----------------------------------------------------
 
         rr_ratio = None
+
         potential_profit = None
 
 
@@ -1622,8 +1738,9 @@ with right:
 
                 rr_ratio = divide(
                     reward_distance,
-                    price_distance,
+                    price_distance
                 )
+
 
                 potential_profit = (
                     max_risk
@@ -1704,6 +1821,7 @@ with right:
                     Margin & Hebel
                 </div>
 
+
                 <div class="cb-margin-row">
 
                     <span>
@@ -1715,6 +1833,7 @@ with right:
                     </span>
 
                 </div>
+
 
                 <div class="cb-margin-row">
 
@@ -1728,6 +1847,7 @@ with right:
 
                 </div>
 
+
                 <div class="cb-margin-row">
 
                     <span>
@@ -1739,6 +1859,7 @@ with right:
                     </span>
 
                 </div>
+
 
                 <div class="cb-margin-row">
 
