@@ -1,7 +1,6 @@
 import streamlit as st
 from pathlib import Path
 import base64
-import math
 
 
 # ============================================================
@@ -18,34 +17,21 @@ st.set_page_config(
 
 
 # ============================================================
-# DATEIPFADE
+# DATEIEN
 # ============================================================
 
 BASE_PATH = Path(__file__).parent
 
 
-def find_asset(possible_names):
-    """
-    Sucht nach einem Bild unter mehreren möglichen Dateinamen.
-    Dadurch funktioniert die App auch dann, wenn das hochgeladene
-    Icon leicht anders benannt wurde.
-    """
-    for name in possible_names:
+def find_file(names):
+    for name in names:
         path = BASE_PATH / name
         if path.exists():
             return path
-
     return None
 
 
-logo_path = find_asset([
-    "countorbreak_logo.png",
-    "CountOrBreak_logo.png",
-    "logo.png",
-    "Logo.png",
-])
-
-calculator_path = find_asset([
+calculator_path = find_file([
     "icon_rechner.png",
     "rechner.png",
     "calculator.png",
@@ -53,84 +39,108 @@ calculator_path = find_asset([
     "positionsgrößenrechner.png",
 ])
 
+logo_path = find_file([
+    "countorbreak_logo.png",
+    "CountOrBreak_logo.png",
+    "logo.png",
+    "Logo.png",
+])
 
-# ============================================================
-# BILD → BASE64
-# ============================================================
 
-def image_to_base64(path):
-    if path is None or not path.exists():
+def image_base64(path):
+    if path is None:
         return None
 
-    return base64.b64encode(path.read_bytes()).decode("utf-8")
+    try:
+        return base64.b64encode(path.read_bytes()).decode("utf-8")
+    except Exception:
+        return None
 
 
-logo_data = image_to_base64(logo_path)
-calculator_data = image_to_base64(calculator_path)
+calculator_image = image_base64(calculator_path)
+logo_image = image_base64(logo_path)
+
+
+# ============================================================
+# HILFSFUNKTIONEN
+# ============================================================
+
+def money(value):
+    return (
+        f"{value:,.2f}"
+        .replace(",", "X")
+        .replace(".", ",")
+        .replace("X", ".")
+        + " €"
+    )
+
+
+def number(value, decimals=2):
+    return (
+        f"{value:,.{decimals}f}"
+        .replace(",", "X")
+        .replace(".", ",")
+        .replace("X", ".")
+    )
+
+
+def divide(a, b):
+    if b == 0:
+        return 0
+    return a / b
 
 
 # ============================================================
 # CSS
 # ============================================================
 
-st.markdown(
+st.html(
     """
     <style>
 
-    /* ========================================================
-       FARBPALETTE
-       ======================================================== */
-
     :root {
-        --gold-main: #C9A35A;
-        --gold-light: #D8B66A;
+        --gold: #C9A35A;
+        --gold-light: #DDBB72;
         --gold-bright: #E8CB87;
         --gold-dark: #76521A;
         --gold-border: #A77D35;
 
-        --background: #040404;
-        --panel: #0A0A0A;
-        --panel-2: #101010;
+        --black: #040404;
+        --panel: #0B0B0B;
+        --panel2: #111111;
 
-        --text: #F0E6D2;
+        --white: #F0E7D8;
         --muted: #AAA197;
 
-        --green: #86B85C;
-        --red: #C66B61;
+        --green: #88B85F;
+        --red: #C76D63;
     }
 
 
     /* ========================================================
-       HAUPTSEITE
+       APP
        ======================================================== */
 
     .stApp {
-
         background:
             radial-gradient(
                 circle at 50% 0%,
-                rgba(201, 163, 90, 0.085),
-                transparent 32%
+                rgba(201,163,90,0.08),
+                transparent 35%
             ),
-
-            radial-gradient(
-                circle at 50% 55%,
-                rgba(130, 88, 23, 0.025),
-                transparent 50%
-            ),
-
             #040404;
-
-        color: var(--text);
     }
 
 
     .block-container {
-
         max-width: 1450px;
-
         padding-top: 1.5rem;
         padding-bottom: 3rem;
+    }
+
+
+    header {
+        visibility: hidden;
     }
 
 
@@ -138,9 +148,6 @@ st.markdown(
         visibility: hidden;
     }
 
-    header {
-        visibility: hidden;
-    }
 
     footer {
         visibility: hidden;
@@ -152,89 +159,53 @@ st.markdown(
        ======================================================== */
 
     .cb-header {
-
-        width: 100%;
-
         display: flex;
-
-        align-items: center;
-
         justify-content: space-between;
-
+        align-items: center;
+        gap: 25px;
         margin-bottom: 18px;
     }
 
 
     .cb-brand {
-
         display: flex;
-
         align-items: center;
-
-        gap: 22px;
+        gap: 20px;
     }
 
 
-    .cb-brand-icon {
-
-        width: 82px;
-
-        height: 82px;
+    .cb-logo-box {
+        width: 78px;
+        height: 78px;
 
         display: flex;
-
         align-items: center;
-
         justify-content: center;
 
-        border: 1px solid rgba(167, 125, 53, 0.75);
-
-        border-radius: 18px;
+        border: 1px solid rgba(167,125,53,0.75);
+        border-radius: 17px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(24, 24, 24, 0.98),
-                rgba(5, 5, 5, 0.98)
+                #151515,
+                #050505
             );
 
         box-shadow:
-            inset 0 0 20px
-            rgba(201, 163, 90, 0.035),
-
-            0 0 12px
-            rgba(201, 163, 90, 0.09);
+            inset 0 0 22px rgba(201,163,90,0.04),
+            0 0 16px rgba(201,163,90,0.08);
     }
 
 
-    .cb-brand-icon img {
-
-        width: 62px;
-
-        height: 62px;
-
+    .cb-logo-box img {
+        width: 60px;
+        height: 60px;
         object-fit: contain;
-
-        filter:
-            drop-shadow(
-                0 0 8px
-                rgba(201, 163, 90, 0.22)
-            );
     }
 
 
-    .cb-brand-fallback {
-
-        color: var(--gold-light);
-
-        font-size: 42px;
-
-        line-height: 1;
-    }
-
-
-    .cb-title-main {
-
+    .cb-title {
         color: var(--gold-light);
 
         font-family:
@@ -242,28 +213,21 @@ st.markdown(
             "Baskerville Old Face",
             "Palatino Linotype",
             "Book Antiqua",
-            Palatino,
             Georgia,
             serif;
 
-        font-size: clamp(30px, 4vw, 52px);
-
+        font-size: clamp(30px, 4vw, 51px);
         font-weight: 500;
 
         letter-spacing: 0.075em;
 
-        line-height: 1.05;
-
         text-shadow:
-            0 0 8px
-            rgba(201, 163, 90, 0.20),
-
-            0 0 22px
-            rgba(201, 163, 90, 0.08);
+            0 0 9px rgba(201,163,90,0.20);
     }
 
 
-    .cb-title-sub {
+    .cb-subtitle {
+        margin-top: 6px;
 
         color: #CFC5B5;
 
@@ -274,121 +238,88 @@ st.markdown(
             Georgia,
             serif;
 
-        font-size: clamp(14px, 1.5vw, 21px);
+        font-size: 14px;
 
         letter-spacing: 0.18em;
-
-        margin-top: 7px;
 
         text-transform: uppercase;
     }
 
 
-    /* ========================================================
-       ANLEITUNG
-       ======================================================== */
+    .cb-guide {
+        padding: 11px 17px;
 
-    .cb-info-box {
-
-        display: inline-flex;
-
-        align-items: center;
-
-        gap: 9px;
-
-        padding: 12px 18px;
-
-        border: 1px solid
-            rgba(167, 125, 53, 0.72);
-
+        border: 1px solid rgba(167,125,53,0.65);
         border-radius: 8px;
 
         color: var(--gold-light);
 
-        background:
-            rgba(10, 10, 10, 0.82);
+        background: rgba(10,10,10,0.85);
 
         font-family:
             "Baskerville",
             Georgia,
             serif;
 
-        font-size: 15px;
-
-        letter-spacing: 0.05em;
+        font-size: 14px;
     }
 
 
-    /* ========================================================
-       TRENNLINIE
-       ======================================================== */
-
-    .cb-line {
-
+    .cb-top-line {
+        width: 100%;
         height: 1px;
 
-        width: 100%;
-
-        margin: 10px 0 27px 0;
+        margin: 8px 0 25px;
 
         background:
             linear-gradient(
                 90deg,
                 transparent,
-                #594016,
+                #5C431C,
                 #A77D35,
-                #D8B66A,
+                #DDBB72,
                 #A77D35,
-                #594016,
+                #5C431C,
                 transparent
             );
 
         box-shadow:
-            0 0 10px
-            rgba(201, 163, 90, 0.22);
+            0 0 10px rgba(201,163,90,0.20);
     }
 
 
     /* ========================================================
-       HAUPTCONTAINER
+       HAUPTBOX
        ======================================================== */
 
-    .cb-main-shell {
-
+    .cb-shell {
         width: 100%;
 
+        padding: 27px;
+
         border:
-            1px solid
-            rgba(167, 125, 53, 0.72);
+            1px solid rgba(167,125,53,0.70);
 
-        border-radius: 12px;
-
-        padding: 26px;
+        border-radius: 13px;
 
         background:
             linear-gradient(
-                135deg,
-                rgba(13, 13, 13, 0.98),
-                rgba(5, 5, 5, 0.99)
+                145deg,
+                rgba(15,15,15,0.99),
+                rgba(5,5,5,0.99)
             );
 
         box-shadow:
-
-            inset
-            0 0 45px
-            rgba(201, 163, 90, 0.025),
-
-            0 14px 45px
-            rgba(0, 0, 0, 0.55);
+            inset 0 0 45px rgba(201,163,90,0.025),
+            0 18px 50px rgba(0,0,0,0.55);
     }
 
 
     /* ========================================================
-       SECTION TITEL
+       SECTIONS
        ======================================================== */
 
     .cb-section-title {
-
         color: var(--gold-light);
 
         font-family:
@@ -398,33 +329,29 @@ st.markdown(
             Georgia,
             serif;
 
-        font-size: 23px;
-
+        font-size: 22px;
         font-weight: 500;
 
         letter-spacing: 0.065em;
 
-        margin-bottom: 13px;
+        margin-bottom: 15px;
 
         text-shadow:
-            0 0 8px
-            rgba(201, 163, 90, 0.15);
+            0 0 8px rgba(201,163,90,0.13);
     }
 
 
-    .cb-section-divider {
-
+    .cb-divider {
         width: 100%;
-
         height: 1px;
 
-        margin: 18px 0 23px 0;
+        margin: 20px 0 24px;
 
         background:
             linear-gradient(
                 90deg,
                 rgba(167,125,53,0.55),
-                rgba(167,125,53,0.08)
+                rgba(167,125,53,0.06)
             );
     }
 
@@ -434,58 +361,32 @@ st.markdown(
        ======================================================== */
 
     div[data-baseweb="select"] > div {
-
-        background:
-            linear-gradient(
-                145deg,
-                #121212,
-                #080808
-            ) !important;
+        background: #0D0D0D !important;
 
         border:
-            1px solid
-            rgba(167, 125, 53, 0.58) !important;
+            1px solid rgba(167,125,53,0.55) !important;
 
         border-radius: 7px !important;
-
-        color: var(--text) !important;
-    }
-
-
-    div[data-baseweb="input"] {
-
-        background: transparent !important;
     }
 
 
     div[data-baseweb="input"] > div {
-
-        background:
-            linear-gradient(
-                145deg,
-                #121212,
-                #080808
-            ) !important;
+        background: #0D0D0D !important;
 
         border:
-            1px solid
-            rgba(167, 125, 53, 0.58) !important;
+            1px solid rgba(167,125,53,0.55) !important;
 
         border-radius: 7px !important;
     }
 
 
     input {
-
-        color: var(--text) !important;
+        color: #F0E7D8 !important;
     }
 
 
     label {
-
         color: #CFC5B5 !important;
-
-        font-size: 13px !important;
     }
 
 
@@ -493,38 +394,28 @@ st.markdown(
        LONG / SHORT
        ======================================================== */
 
-    .cb-direction-info {
-
+    .cb-direction {
         padding: 12px 15px;
 
-        border: 1px solid
-            rgba(167, 125, 53, 0.45);
+        border:
+            1px solid rgba(167,125,53,0.42);
 
         border-radius: 7px;
 
         background:
-            rgba(201, 163, 90, 0.025);
+            rgba(201,163,90,0.025);
 
-        color: #BDB4A6;
+        color: #BEB5A7;
 
         font-size: 13px;
-
-        margin-top: 4px;
     }
 
 
     /* ========================================================
-       ERGEBNISSE
+       ERGEBNIS
        ======================================================== */
 
     .cb-results-title {
-
-        display: flex;
-
-        align-items: center;
-
-        gap: 12px;
-
         color: var(--gold-light);
 
         font-family:
@@ -542,44 +433,38 @@ st.markdown(
     }
 
 
-    .cb-result-main {
+    .cb-main-result {
+        width: 100%;
 
-        border:
-            1px solid
-            rgba(201, 163, 90, 0.82);
-
-        border-radius: 11px;
-
-        padding: 24px;
+        padding: 25px;
 
         text-align: center;
+
+        border:
+            1px solid rgba(201,163,90,0.85);
+
+        border-radius: 11px;
 
         background:
             radial-gradient(
                 circle at 50% 0%,
-                rgba(201, 163, 90, 0.08),
-                transparent 60%
+                rgba(201,163,90,0.09),
+                transparent 65%
             ),
-
             #080808;
 
         box-shadow:
-
-            inset
-            0 0 30px
-            rgba(201, 163, 90, 0.025),
-
-            0 0 18px
-            rgba(201, 163, 90, 0.08);
+            inset 0 0 30px rgba(201,163,90,0.025),
+            0 0 20px rgba(201,163,90,0.08);
     }
 
 
     .cb-result-label {
-
-        color: #D0C5B4;
+        color: #D4C9B8;
 
         font-family:
             "Baskerville",
+            "Baskerville Old Face",
             Georgia,
             serif;
 
@@ -592,119 +477,109 @@ st.markdown(
 
 
     .cb-result-value {
-
         color: var(--green);
 
         font-family:
             "Baskerville",
             "Baskerville Old Face",
+            "Palatino Linotype",
             Georgia,
             serif;
 
-        font-size: clamp(36px, 4vw, 57px);
+        font-size: clamp(38px, 4vw, 58px);
 
         font-weight: 500;
 
-        line-height: 1.1;
+        line-height: 1.15;
 
         margin: 9px 0;
 
         text-shadow:
-            0 0 10px
-            rgba(134, 184, 92, 0.18);
+            0 0 11px rgba(136,184,95,0.18);
     }
 
 
     .cb-result-small {
-
-        color: #AFA69A;
-
+        color: #9D958A;
         font-size: 13px;
     }
 
 
     /* ========================================================
-       RESULT CARDS
+       STAT CARDS
        ======================================================== */
 
     .cb-stat {
-
-        min-height: 92px;
-
         display: flex;
 
         align-items: center;
-
         justify-content: space-between;
 
         gap: 20px;
 
-        padding: 16px 18px;
-
         margin-top: 12px;
 
+        padding: 15px 18px;
+
+        min-height: 82px;
+
         border:
-            1px solid
-            rgba(167, 125, 53, 0.48);
+            1px solid rgba(167,125,53,0.45);
 
         border-radius: 9px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(20, 20, 20, 0.98),
-                rgba(8, 8, 8, 0.99)
+                #141414,
+                #080808
             );
-
-        box-shadow:
-            inset
-            0 0 18px
-            rgba(201, 163, 90, 0.018);
     }
 
 
     .cb-stat-left {
-
         display: flex;
 
         align-items: center;
 
         gap: 13px;
 
-        color: #D4C8B7;
+        color: #D1C6B6;
 
         font-size: 14px;
     }
 
 
     .cb-stat-icon {
-
         width: 38px;
+        height: 38px;
 
         min-width: 38px;
-
-        height: 38px;
 
         display: flex;
 
         align-items: center;
-
         justify-content: center;
 
         border:
-            1px solid
-            rgba(201, 163, 90, 0.50);
+            1px solid rgba(201,163,90,0.50);
 
         border-radius: 50%;
 
         color: var(--gold-light);
 
-        font-size: 18px;
+        font-size: 17px;
     }
 
 
-    .cb-stat-right {
+    .cb-stat-sub {
+        color: #878078;
+        font-size: 12px;
+        margin-top: 3px;
+    }
 
+
+    .cb-stat-value {
         color: var(--gold-light);
 
         font-family:
@@ -712,50 +587,31 @@ st.markdown(
             Georgia,
             serif;
 
-        font-size: 20px;
+        font-size: 19px;
 
         text-align: right;
     }
 
 
-    .cb-stat-sub {
-
-        color: #8F887F;
-
-        font-family:
-            Arial,
-            Helvetica,
-            sans-serif;
-
-        font-size: 12px;
-
-        margin-top: 2px;
-    }
-
-
     /* ========================================================
-       MARGIN BEREICH
+       MARGIN
        ======================================================== */
 
     .cb-margin {
-
         margin-top: 15px;
 
-        padding: 21px;
+        padding: 20px;
 
         border:
-            1px solid
-            rgba(167, 125, 53, 0.50);
+            1px solid rgba(167,125,53,0.48);
 
         border-radius: 9px;
 
-        background:
-            rgba(12, 12, 12, 0.94);
+        background: #0B0B0B;
     }
 
 
     .cb-margin-title {
-
         color: var(--gold-light);
 
         font-family:
@@ -767,65 +623,57 @@ st.markdown(
 
         letter-spacing: 0.055em;
 
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
 
 
     .cb-margin-row {
-
         display: flex;
 
-        justify-content: space-between;
-
         align-items: center;
+        justify-content: space-between;
 
         padding: 8px 0;
 
         border-bottom:
-            1px solid
-            rgba(167, 125, 53, 0.10);
+            1px solid rgba(167,125,53,0.10);
 
-        color: #AAA299;
+        color: #9F978C;
 
         font-size: 13px;
     }
 
 
     .cb-margin-row:last-child {
-
         border-bottom: none;
     }
 
 
     .cb-margin-value {
-
-        color: #E0D5C3;
-
-        font-size: 15px;
+        color: #DDD2C0;
+        font-size: 14px;
     }
 
 
     /* ========================================================
-       HINWEIS
+       WARNING
        ======================================================== */
 
     .cb-warning {
-
         margin-top: 18px;
 
         padding: 18px 20px;
 
         border:
-            1px solid
-            rgba(167, 125, 53, 0.68);
+            1px solid rgba(167,125,53,0.60);
 
         border-radius: 9px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(27, 23, 16, 0.96),
-                rgba(9, 9, 9, 0.99)
+                rgba(27,23,16,0.96),
+                rgba(8,8,8,0.99)
             );
 
         color: #CFC4B3;
@@ -837,7 +685,6 @@ st.markdown(
 
 
     .cb-warning-title {
-
         color: var(--gold-light);
 
         font-family:
@@ -847,9 +694,7 @@ st.markdown(
 
         font-size: 17px;
 
-        margin-bottom: 7px;
-
-        letter-spacing: 0.04em;
+        margin-bottom: 6px;
     }
 
 
@@ -858,33 +703,30 @@ st.markdown(
        ======================================================== */
 
     .cb-footer {
+        margin-top: 25px;
 
-        margin-top: 26px;
-
-        padding-top: 18px;
+        padding-top: 17px;
 
         border-top:
-            1px solid
-            rgba(167, 125, 53, 0.30);
+            1px solid rgba(167,125,53,0.28);
 
         text-align: center;
 
         color: #716C64;
 
-        font-size: 12px;
-
-        letter-spacing: 0.12em;
-
         font-family:
             "Baskerville",
             Georgia,
             serif;
+
+        font-size: 12px;
+
+        letter-spacing: 0.12em;
     }
 
 
     .cb-footer-gold {
-
-        color: var(--gold-main);
+        color: var(--gold);
     }
 
 
@@ -895,153 +737,82 @@ st.markdown(
     @media (max-width: 850px) {
 
         .block-container {
-
-            padding-left: 0.7rem;
-
-            padding-right: 0.7rem;
+            padding-left: 0.65rem;
+            padding-right: 0.65rem;
         }
 
-
-        .cb-main-shell {
-
+        .cb-shell {
             padding: 17px;
         }
 
-
         .cb-header {
-
             flex-direction: column;
-
             align-items: flex-start;
-
-            gap: 17px;
         }
 
-
-        .cb-brand-icon {
-
+        .cb-logo-box {
             width: 65px;
-
             height: 65px;
         }
 
-
-        .cb-brand-icon img {
-
+        .cb-logo-box img {
             width: 50px;
-
             height: 50px;
         }
 
-
-        .cb-title-main {
-
+        .cb-title {
             font-size: 30px;
         }
 
-
-        .cb-title-sub {
-
+        .cb-subtitle {
             font-size: 12px;
-
             letter-spacing: 0.10em;
         }
 
+        .cb-main-result {
+            padding: 21px 15px;
+        }
+
+        .cb-result-value {
+            font-size: 40px;
+        }
 
         .cb-stat {
-
-            min-height: 82px;
-
             padding: 13px;
         }
 
-
-        .cb-stat-right {
-
-            font-size: 17px;
-        }
-
-
-        .cb-result-value {
-
-            font-size: 40px;
+        .cb-stat-value {
+            font-size: 16px;
         }
     }
 
     </style>
-    """,
-    unsafe_allow_html=True,
+    """
 )
-
-
-# ============================================================
-# HILFSFUNKTIONEN
-# ============================================================
-
-def money(value):
-    return f"{value:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
-def number_de(value, decimals=2):
-    return (
-        f"{value:,.{decimals}f}"
-        .replace(",", "X")
-        .replace(".", ",")
-        .replace("X", ".")
-    )
-
-
-def safe_divide(a, b):
-    if b == 0:
-        return 0
-    return a / b
 
 
 # ============================================================
 # HEADER
 # ============================================================
 
-if logo_data:
-
-    logo_html = f"""
-        <img
-            src="data:image/png;base64,{logo_data}"
-            style="
-                width:62px;
-                height:62px;
-                object-fit:contain;
-            "
-        >
-    """
-
-else:
-
-    logo_html = """
-        <div class="cb-brand-fallback">
-            ♢
-        </div>
-    """
-
-
-if calculator_data:
+if calculator_image:
 
     calculator_html = f"""
-        <img
-            src="data:image/png;base64,{calculator_data}"
-            style="
-                width:62px;
-                height:62px;
-                object-fit:contain;
-            "
-        >
+    <img
+        src="data:image/png;base64,{calculator_image}"
+        alt="Positionsgrößenrechner"
+    >
     """
 
 else:
 
     calculator_html = """
-        <div class="cb-brand-fallback">
-            🧮
-        </div>
+    <span style="
+        color:#DDBB72;
+        font-size:38px;
+    ">
+        ♢
+    </span>
     """
 
 
@@ -1051,17 +822,17 @@ st.html(
 
         <div class="cb-brand">
 
-            <div class="cb-brand-icon">
+            <div class="cb-logo-box">
                 {calculator_html}
             </div>
 
             <div>
 
-                <div class="cb-title-main">
+                <div class="cb-title">
                     COUNT OR BREAK
                 </div>
 
-                <div class="cb-title-sub">
+                <div class="cb-subtitle">
                     Positionsgrößenrechner
                 </div>
 
@@ -1069,29 +840,25 @@ st.html(
 
         </div>
 
-        <div class="cb-info-box">
-            ⓘ &nbsp; Anleitung
+        <div class="cb-guide">
+            ⓘ &nbsp; Risiko zuerst. Gewinne danach.
         </div>
 
     </div>
 
-    <div class="cb-line"></div>
+    <div class="cb-top-line"></div>
     """
 )
 
 
 # ============================================================
-# HAUPTBEREICH
+# HAUPTBOX
 # ============================================================
 
-st.markdown(
-    '<div class="cb-main-shell">',
-    unsafe_allow_html=True,
-)
+st.html('<div class="cb-shell">')
 
-
-left_column, right_column = st.columns(
-    [1.03, 1],
+left, right = st.columns(
+    [1.04, 1],
     gap="large",
 )
 
@@ -1100,16 +867,20 @@ left_column, right_column = st.columns(
 # LINKE SEITE
 # ============================================================
 
-with left_column:
+with left:
 
     # --------------------------------------------------------
-    # 1. MARKT
+    # MARKT
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="cb-section-title">1. Markt</div>',
-        unsafe_allow_html=True,
+    st.html(
+        """
+        <div class="cb-section-title">
+            1. Markt
+        </div>
+        """
     )
+
 
     market = st.selectbox(
         "Produkttyp",
@@ -1122,49 +893,57 @@ with left_column:
             "Futures",
             "Sonstiger CFD",
         ],
-        index=0,
     )
+
+
+    default_instrument = ""
+
+    if market == "Forex CFD":
+        default_instrument = "EUR/USD"
+
+    elif market == "Index CFD":
+        default_instrument = "NAS100"
+
+    elif market == "Krypto CFD":
+        default_instrument = "BTC/USD"
+
+    elif market == "Rohstoff CFD":
+        default_instrument = "XAU/USD"
 
 
     instrument = st.text_input(
         "Instrument",
-        value="EUR/USD" if market == "Forex CFD" else "",
-        placeholder="z. B. EUR/USD, NAS100, XAU/USD, BTC/USD",
+        value=default_instrument,
+        placeholder="z. B. EUR/USD, NAS100, XAU/USD",
     )
 
 
-    if market in [
-        "Forex CFD",
-        "Index CFD",
-        "Krypto CFD",
-        "Rohstoff CFD",
-        "Aktien CFD",
-        "Sonstiger CFD",
-    ]:
+    if market != "Futures":
 
         st.caption(
-            "Broker: Pepperstone · Werte bitte anhand der "
-            "aktuellen Produktspezifikation deines Instruments prüfen."
+            "Pepperstone CFD · Bitte aktuelle Produktspezifikationen "
+            "für das gewählte Instrument prüfen."
         )
 
 
-    st.markdown(
-        '<div class="cb-section-divider"></div>',
-        unsafe_allow_html=True,
-    )
+    st.html('<div class="cb-divider"></div>')
 
 
     # --------------------------------------------------------
-    # 2. TRADE-RICHTUNG
+    # RICHTUNG
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="cb-section-title">2. Trade-Richtung</div>',
-        unsafe_allow_html=True,
+    st.html(
+        """
+        <div class="cb-section-title">
+            2. Trade-Richtung
+        </div>
+        """
     )
+
 
     direction = st.radio(
-        "Richtung",
+        "Trade-Richtung",
         ["Long", "Short"],
         horizontal=True,
         label_visibility="collapsed",
@@ -1173,45 +952,45 @@ with left_column:
 
     if direction == "Long":
 
-        st.markdown(
+        st.html(
             """
-            <div class="cb-direction-info">
-                ↗ Long: Der Stop-Loss liegt unterhalb des Einstiegs.
+            <div class="cb-direction">
+                ↗ Long – der Stop-Loss liegt unterhalb des Einstiegs.
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
     else:
 
-        st.markdown(
+        st.html(
             """
-            <div class="cb-direction-info">
-                ↘ Short: Der Stop-Loss liegt oberhalb des Einstiegs.
+            <div class="cb-direction">
+                ↘ Short – der Stop-Loss liegt oberhalb des Einstiegs.
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
-    st.markdown(
-        '<div class="cb-section-divider"></div>',
-        unsafe_allow_html=True,
-    )
+    st.html('<div class="cb-divider"></div>')
 
 
     # --------------------------------------------------------
-    # 3. KONTO & RISIKO
+    # KONTO & RISIKO
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="cb-section-title">3. Konto & Risiko</div>',
-        unsafe_allow_html=True,
+    st.html(
+        """
+        <div class="cb-section-title">
+            3. Konto & Risiko
+        </div>
+        """
     )
 
-    col_a, col_b = st.columns(2)
 
-    with col_a:
+    account_col, risk_col = st.columns(2)
+
+
+    with account_col:
 
         account_size = st.number_input(
             "Kontogröße (€)",
@@ -1221,7 +1000,8 @@ with left_column:
             format="%.2f",
         )
 
-    with col_b:
+
+    with risk_col:
 
         risk_percent = st.number_input(
             "Risiko pro Trade (%)",
@@ -1237,7 +1017,7 @@ with left_column:
 
 
     st.number_input(
-        "Max. Risiko (€)",
+        "Maximales Risiko (€)",
         min_value=0.01,
         value=float(max_risk),
         step=10.00,
@@ -1246,60 +1026,72 @@ with left_column:
     )
 
 
-    st.markdown(
-        '<div class="cb-section-divider"></div>',
-        unsafe_allow_html=True,
-    )
+    st.html('<div class="cb-divider"></div>')
 
 
     # --------------------------------------------------------
-    # 4. TRADE-DATEN
+    # TRADE DATEN
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="cb-section-title">4. Trade-Daten</div>',
-        unsafe_allow_html=True,
+    st.html(
+        """
+        <div class="cb-section-title">
+            4. Trade-Daten
+        </div>
+        """
     )
 
-    col_c, col_d = st.columns(2)
+
+    price_col_1, price_col_2 = st.columns(2)
 
 
-    with col_c:
+    if market == "Forex CFD":
+
+        default_entry = 1.17000
+        price_step = 0.00001
+        price_format = "%.5f"
+
+    else:
+
+        default_entry = 100.0
+        price_step = 0.10
+        price_format = "%.4f"
+
+
+    with price_col_1:
 
         entry_price = st.number_input(
             "Einstiegskurs",
             min_value=0.00000001,
-            value=1.17000 if market == "Forex CFD" else 100.0,
-            step=0.00001 if market == "Forex CFD" else 0.1,
-            format="%.5f" if market == "Forex CFD" else "%.4f",
+            value=default_entry,
+            step=price_step,
+            format=price_format,
         )
 
 
-    with col_d:
+    if direction == "Long":
 
-        if direction == "Long":
-
-            default_stop = (
-                1.16500
-                if market == "Forex CFD"
-                else max(entry_price * 0.98, 0.00000001)
-            )
-
+        if market == "Forex CFD":
+            default_stop = 1.16500
         else:
+            default_stop = max(entry_price * 0.98, 0.00000001)
 
-            default_stop = (
-                1.17500
-                if market == "Forex CFD"
-                else entry_price * 1.02
-            )
+    else:
 
+        if market == "Forex CFD":
+            default_stop = 1.17500
+        else:
+            default_stop = entry_price * 1.02
+
+
+    with price_col_2:
 
         stop_loss = st.number_input(
             "Stop-Loss",
             min_value=0.00000001,
             value=float(default_stop),
-            step=0.00001 if market == "Forex CFD" else 0.1,
-            format="%.5f" if market == "Forex CFD" else "%.4f",
+            step=price_step,
+            format=price_format,
         )
 
 
@@ -1307,36 +1099,33 @@ with left_column:
         "Take-Profit (optional)",
         min_value=0.0,
         value=0.0,
-        step=0.00001 if market == "Forex CFD" else 0.1,
-        format="%.5f" if market == "Forex CFD" else "%.4f",
-        help="0 = kein Take-Profit angegeben.",
+        step=price_step,
+        format=price_format,
+        help="0 = kein Take-Profit.",
     )
 
 
-    # --------------------------------------------------------
-    # STOP DISTANZ
-    # --------------------------------------------------------
-
     price_distance = abs(entry_price - stop_loss)
 
-    stop_percent = safe_divide(
+    stop_percent = divide(
         price_distance,
         entry_price,
     ) * 100
 
 
+    st.html('<div class="cb-divider"></div>')
+
+
     # --------------------------------------------------------
-    # 5. INSTRUMENT DETAILS
+    # INSTRUMENT DETAILS
     # --------------------------------------------------------
 
-    st.markdown(
-        '<div class="cb-section-divider"></div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        '<div class="cb-section-title">5. Instrument Details</div>',
-        unsafe_allow_html=True,
+    st.html(
+        """
+        <div class="cb-section-title">
+            5. Instrument Details
+        </div>
+        """
     )
 
 
@@ -1346,9 +1135,10 @@ with left_column:
 
     if market == "Forex CFD":
 
-        col_e, col_f = st.columns(2)
+        col1, col2 = st.columns(2)
 
-        with col_e:
+
+        with col1:
 
             lot_size = st.number_input(
                 "Lot-Größe",
@@ -1358,7 +1148,8 @@ with left_column:
                 format="%.0f",
             )
 
-        with col_f:
+
+        with col2:
 
             pip_size = st.number_input(
                 "Pip-Größe",
@@ -1369,11 +1160,12 @@ with left_column:
             )
 
 
-        col_g, col_h = st.columns(2)
+        col3, col4 = st.columns(2)
 
-        with col_g:
 
-            pip_value_per_lot = st.number_input(
+        with col3:
+
+            pip_value = st.number_input(
                 "Pip-Wert pro Lot (€)",
                 min_value=0.0001,
                 value=10.00,
@@ -1381,7 +1173,8 @@ with left_column:
                 format="%.2f",
             )
 
-        with col_h:
+
+        with col4:
 
             leverage = st.number_input(
                 "Hebel",
@@ -1392,23 +1185,31 @@ with left_column:
             )
 
 
-        pips = safe_divide(
+        pips = divide(
             price_distance,
             pip_size,
         )
 
-        risk_per_lot = pips * pip_value_per_lot
 
-        position_lots = safe_divide(
+        risk_per_lot = pips * pip_value
+
+
+        position_lots = divide(
             max_risk,
             risk_per_lot,
         )
 
+
         position_units = position_lots * lot_size
 
-        position_value = position_units * entry_price
 
-        margin_required = safe_divide(
+        position_value = (
+            position_units
+            * entry_price
+        )
+
+
+        margin_required = divide(
             position_value,
             leverage,
         )
@@ -1420,9 +1221,10 @@ with left_column:
 
     elif market == "Futures":
 
-        col_e, col_f = st.columns(2)
+        col1, col2 = st.columns(2)
 
-        with col_e:
+
+        with col1:
 
             tick_size = st.number_input(
                 "Tick-Größe",
@@ -1432,7 +1234,8 @@ with left_column:
                 format="%.4f",
             )
 
-        with col_f:
+
+        with col2:
 
             tick_value = st.number_input(
                 "Tick-Wert (€)",
@@ -1443,79 +1246,68 @@ with left_column:
             )
 
 
-        col_g, col_h = st.columns(2)
-
-        with col_g:
-
-            contract_size = st.number_input(
-                "Kontraktgröße",
-                min_value=0.0001,
-                value=1.0,
-                step=1.0,
-                format="%.4f",
-            )
-
-        with col_h:
-
-            leverage = st.number_input(
-                "Hebel",
-                min_value=1.0,
-                value=20.0,
-                step=1.0,
-                format="%.0f",
-            )
+        leverage = st.number_input(
+            "Hebel",
+            min_value=1.0,
+            value=20.0,
+            step=1.0,
+            format="%.0f",
+        )
 
 
-        ticks = safe_divide(
+        ticks = divide(
             price_distance,
             tick_size,
         )
 
-        risk_per_contract = ticks * tick_value
 
-        position_contracts = safe_divide(
+        risk_per_contract = (
+            ticks * tick_value
+        )
+
+
+        position_contracts = divide(
             max_risk,
             risk_per_contract,
         )
 
+
         position_units = position_contracts
+
 
         position_value = (
             position_contracts
-            * contract_size
             * entry_price
         )
 
-        margin_required = safe_divide(
+
+        margin_required = divide(
             position_value,
             leverage,
         )
 
 
     # ========================================================
-    # CFDs
+    # ANDERE CFDs
     # ========================================================
 
     else:
 
-        col_e, col_f = st.columns(2)
+        col1, col2 = st.columns(2)
 
-        with col_e:
+
+        with col1:
 
             value_per_unit = st.number_input(
-                "Wert pro 1 Preis-Einheit (€)",
+                "Wert pro 1,00 Preisbewegung (€)",
                 min_value=0.0001,
                 value=1.00,
                 step=0.10,
                 format="%.4f",
-                help=(
-                    "Wie viel € Gewinn/Verlust entsteht bei "
-                    "einer Preisbewegung von 1,00 pro Einheit?"
-                ),
             )
 
 
-        with col_f:
+        with col2:
 
             contract_size = st.number_input(
                 "Kontrakt-/Einheitsgröße",
@@ -1535,12 +1327,17 @@ with left_column:
         )
 
 
-        risk_per_unit = price_distance * value_per_unit
+        risk_per_unit = (
+            price_distance
+            * value_per_unit
+        )
 
-        position_units = safe_divide(
+
+        position_units = divide(
             max_risk,
             risk_per_unit,
         )
+
 
         position_value = (
             position_units
@@ -1548,7 +1345,8 @@ with left_column:
             * entry_price
         )
 
-        margin_required = safe_divide(
+
+        margin_required = divide(
             position_value,
             leverage,
         )
@@ -1558,131 +1356,97 @@ with left_column:
     # VALIDIERUNG
     # ========================================================
 
-    valid_trade = True
-
-    validation_message = ""
+    valid = True
+    error_message = ""
 
 
     if entry_price <= 0:
 
-        valid_trade = False
-
-        validation_message = (
+        valid = False
+        error_message = (
             "Der Einstiegskurs muss größer als 0 sein."
         )
 
 
     elif stop_loss <= 0:
 
-        valid_trade = False
-
-        validation_message = (
+        valid = False
+        error_message = (
             "Der Stop-Loss muss größer als 0 sein."
         )
 
 
     elif price_distance <= 0:
 
-        valid_trade = False
-
-        validation_message = (
+        valid = False
+        error_message = (
             "Einstieg und Stop-Loss dürfen nicht identisch sein."
         )
 
 
     elif direction == "Long" and stop_loss >= entry_price:
 
-        valid_trade = False
-
-        validation_message = (
-            "Bei einem Long-Trade muss der Stop-Loss "
-            "unterhalb des Einstiegs liegen."
+        valid = False
+        error_message = (
+            "Bei Long muss der Stop-Loss unterhalb "
+            "des Einstiegs liegen."
         )
 
 
     elif direction == "Short" and stop_loss <= entry_price:
 
-        valid_trade = False
-
-        validation_message = (
-            "Bei einem Short-Trade muss der Stop-Loss "
-            "oberhalb des Einstiegs liegen."
+        valid = False
+        error_message = (
+            "Bei Short muss der Stop-Loss oberhalb "
+            "des Einstiegs liegen."
         )
 
 
-    # ========================================================
-    # TAKE PROFIT
-    # ========================================================
-
-    rr_ratio = None
-    potential_profit = None
-
-
-    if take_profit > 0 and valid_trade:
-
-        if direction == "Long":
-
-            reward_distance = take_profit - entry_price
-
-        else:
-
-            reward_distance = entry_price - take_profit
-
-
-        if reward_distance > 0:
-
-            rr_ratio = safe_divide(
-                reward_distance,
-                price_distance,
-            )
-
-            potential_profit = max_risk * rr_ratio
-
-
 # ============================================================
-# RECHTE SEITE – ERGEBNISSE
+# RECHTE SEITE
 # ============================================================
 
-with right_column:
+with right:
 
-    st.markdown(
+    st.html(
         """
         <div class="cb-results-title">
-            🧮 &nbsp; Ergebnisse
+            Ergebnisse
         </div>
-        """,
-        unsafe_allow_html=True,
+        """
     )
 
 
-    if valid_trade:
+    if valid:
 
         # ----------------------------------------------------
-        # HAUPTERGEBNIS
+        # POSITIONSGRÖSSE
         # ----------------------------------------------------
 
         if market == "Forex CFD":
 
             position_display = (
-                f"{number_de(position_lots, 2)} Lots"
+                f"{number(position_lots, 2)} Lots"
             )
 
             position_sub = (
-                f"= {number_de(position_units, 0)} Einheiten"
+                f"= {number(position_units, 0)} Einheiten"
             )
 
         elif market == "Futures":
 
             position_display = (
-                f"{number_de(position_units, 2)} Kontrakte"
+                f"{number(position_units, 2)} Kontrakte"
             )
 
-            position_sub = "basierend auf dem angegebenen Tick-Wert"
+            position_sub = (
+                "auf Basis des angegebenen Tick-Werts"
+            )
 
         else:
 
             position_display = (
-                f"{number_de(position_units, 2)} Einheiten"
+                f"{number(position_units, 2)} Einheiten"
             )
 
             position_sub = (
@@ -1690,9 +1454,9 @@ with right_column:
             )
 
 
-        st.markdown(
+        st.html(
             f"""
-            <div class="cb-result-main">
+            <div class="cb-main-result">
 
                 <div class="cb-result-label">
                     Empfohlene Positionsgröße
@@ -1707,16 +1471,15 @@ with right_column:
                 </div>
 
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
         # ----------------------------------------------------
-        # MAX VERLUST
+        # RISIKO
         # ----------------------------------------------------
 
-        st.markdown(
+        st.html(
             f"""
             <div class="cb-stat">
 
@@ -1727,49 +1490,50 @@ with right_column:
                     </div>
 
                     <div>
+
                         Max. Verlust bei Stop-Loss
 
                         <div class="cb-stat-sub">
-                            {number_de(risk_percent, 2)} % des Kontos
+                            {number(risk_percent, 2)} % des Kontos
                         </div>
+
                     </div>
 
                 </div>
 
-                <div class="cb-stat-right">
+                <div class="cb-stat-value">
                     {money(max_risk)}
                 </div>
 
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
         # ----------------------------------------------------
-        # STOP LOSS DISTANZ
+        # STOP DISTANZ
         # ----------------------------------------------------
 
         if market == "Forex CFD":
 
             stop_display = (
-                f"{number_de(pips, 1)} Pips"
+                f"{number(pips, 1)} Pips"
             )
 
         elif market == "Futures":
 
             stop_display = (
-                f"{number_de(ticks, 1)} Ticks"
+                f"{number(ticks, 1)} Ticks"
             )
 
         else:
 
             stop_display = (
-                f"{number_de(price_distance, 4)} Preis-Einheiten"
+                f"{number(price_distance, 4)}"
             )
 
 
-        st.markdown(
+        st.html(
             f"""
             <div class="cb-stat">
 
@@ -1780,22 +1544,23 @@ with right_column:
                     </div>
 
                     <div>
+
                         Stop-Loss-Abstand
 
                         <div class="cb-stat-sub">
-                            {number_de(stop_percent, 2)} % vom Einstieg
+                            {number(stop_percent, 2)} % vom Einstieg
                         </div>
+
                     </div>
 
                 </div>
 
-                <div class="cb-stat-right">
+                <div class="cb-stat-value">
                     {stop_display}
                 </div>
 
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
@@ -1803,7 +1568,7 @@ with right_column:
         # POSITIONSWERT
         # ----------------------------------------------------
 
-        st.markdown(
+        st.html(
             f"""
             <div class="cb-stat">
 
@@ -1819,13 +1584,12 @@ with right_column:
 
                 </div>
 
-                <div class="cb-stat-right">
+                <div class="cb-stat-value">
                     {money(position_value)}
                 </div>
 
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
@@ -1833,9 +1597,43 @@ with right_column:
         # CHANCE / RISIKO
         # ----------------------------------------------------
 
+        rr_ratio = None
+        potential_profit = None
+
+
+        if take_profit > 0:
+
+            if direction == "Long":
+
+                reward_distance = (
+                    take_profit
+                    - entry_price
+                )
+
+            else:
+
+                reward_distance = (
+                    entry_price
+                    - take_profit
+                )
+
+
+            if reward_distance > 0:
+
+                rr_ratio = divide(
+                    reward_distance,
+                    price_distance,
+                )
+
+                potential_profit = (
+                    max_risk
+                    * rr_ratio
+                )
+
+
         if rr_ratio is not None:
 
-            st.markdown(
+            st.html(
                 f"""
                 <div class="cb-stat">
 
@@ -1851,17 +1649,16 @@ with right_column:
 
                     </div>
 
-                    <div class="cb-stat-right">
-                        {number_de(rr_ratio, 2)} : 1
+                    <div class="cb-stat-value">
+                        {number(rr_ratio, 2)} : 1
                     </div>
 
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """
             )
 
 
-            st.markdown(
+            st.html(
                 f"""
                 <div class="cb-stat">
 
@@ -1872,38 +1669,39 @@ with right_column:
                         </div>
 
                         <div>
+
                             Potenzieller Gewinn
 
                             <div class="cb-stat-sub">
                                 bei Take-Profit
                             </div>
+
                         </div>
 
                     </div>
 
                     <div
-                        class="cb-stat-right"
-                        style="color:#86B85C;"
+                        class="cb-stat-value"
+                        style="color:#88B85F;"
                     >
                         {money(potential_profit)}
                     </div>
 
                 </div>
-                """,
-                unsafe_allow_html=True,
+                """
             )
 
 
         # ----------------------------------------------------
-        # MARGIN & HEBEL
+        # MARGIN
         # ----------------------------------------------------
 
-        st.markdown(
+        st.html(
             f"""
             <div class="cb-margin">
 
                 <div class="cb-margin-title">
-                    ▥ &nbsp; Margin & Hebel
+                    Margin & Hebel
                 </div>
 
                 <div class="cb-margin-row">
@@ -1921,11 +1719,11 @@ with right_column:
                 <div class="cb-margin-row">
 
                     <span>
-                        Verwendeter Hebel
+                        Hebel
                     </span>
 
                     <span class="cb-margin-value">
-                        1 : {number_de(leverage, 0)}
+                        1 : {number(leverage, 0)}
                     </span>
 
                 </div>
@@ -1955,38 +1753,32 @@ with right_column:
                 </div>
 
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
     else:
 
-        # ----------------------------------------------------
-        # FEHLER
-        # ----------------------------------------------------
-
-        st.markdown(
+        st.html(
             f"""
             <div class="cb-warning">
 
                 <div class="cb-warning-title">
-                    ⚠ Eingabe prüfen
+                    Eingabe prüfen
                 </div>
 
-                {validation_message}
+                {error_message}
 
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
 
 
 # ============================================================
-# HINWEIS
+# RISIKOHINWEIS
 # ============================================================
 
-st.markdown(
+st.html(
     """
     <div class="cb-warning">
 
@@ -1995,19 +1787,27 @@ st.markdown(
         </div>
 
         Dieser Rechner dient zur Orientierung bei der
-        Positions- und Risikoplanung. Bei CFDs können Verluste
-        schnell entstehen. Prüfe die aktuellen
-        Produktspezifikationen, Kontraktgrößen, Pip-/Tick-Werte
-        und Margin-Anforderungen deines konkreten Instruments
-        vor dem Trade.
+        Positions- und Risikoplanung.
+
+        <br><br>
+
+        Bei CFDs können Verluste schnell entstehen.
+        Prüfe vor jedem Trade die aktuellen
+        Produktspezifikationen, Kontraktgrößen,
+        Pip-/Tick-Werte und Margin-Anforderungen
+        des konkreten Instruments.
+
+        <br><br>
+
+        Die tatsächlichen Konditionen können je nach
+        Instrument und Broker variieren.
 
         <br><br>
 
         <strong>Risk first. Profits second.</strong>
 
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
@@ -2015,7 +1815,7 @@ st.markdown(
 # FOOTER
 # ============================================================
 
-st.markdown(
+st.html(
     """
     <div class="cb-footer">
 
@@ -2025,11 +1825,14 @@ st.markdown(
 
         &nbsp; • &nbsp;
 
-        TRADE PLAN. STAY DISCIPLINED. BREAK LIMITS.
+        Trading Journal
+        &nbsp; • &nbsp;
+        Risk Management
+        &nbsp; • &nbsp;
+        Performance
 
     </div>
-    """,
-    unsafe_allow_html=True,
+    """
 )
 
 
@@ -2037,7 +1840,4 @@ st.markdown(
 # ENDE
 # ============================================================
 
-st.markdown(
-    "</div>",
-    unsafe_allow_html=True,
-)
+st.html("</div>")
