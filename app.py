@@ -1,7 +1,7 @@
 import streamlit as st
 from pathlib import Path
-from textwrap import dedent
 import base64
+import math
 
 
 # ============================================================
@@ -18,21 +18,21 @@ st.set_page_config(
 
 
 # ============================================================
-# DATEIEN
+# DATEIPFADE
 # ============================================================
 
-BASE_DIR = Path(__file__).parent
+BASE_DIR = Path(__file__).resolve().parent
 
 
-def find_asset(names):
-    for name in names:
-        path = BASE_DIR / name
-        if path.exists():
-            return path
+def find_file(possible_names):
+    for filename in possible_names:
+        file_path = BASE_DIR / filename
+        if file_path.exists() and file_path.is_file():
+            return file_path
     return None
 
 
-LOGO_PATH = find_asset([
+LOGO_PATH = find_file([
     "logo.png",
     "Logo.png",
     "countorbreak_logo.png",
@@ -41,21 +41,35 @@ LOGO_PATH = find_asset([
     "CountOrBreak.png",
     "cb_logo.png",
     "CB_Logo.png",
+    "logo.jpg",
+    "Logo.jpg",
+    "logo.webp",
 ])
 
-CALCULATOR_PATH = find_asset([
+
+CALCULATOR_PATH = find_file([
     "rechner.png",
     "Rechner.png",
     "calculator.png",
     "Calculator.png",
     "icon_rechner.png",
+    "Icon_Rechner.png",
     "positionsgroessenrechner.png",
+    "Positionsgroessenrechner.png",
     "positionsgrößenrechner.png",
+    "Positionsgrößenrechner.png",
     "positionsgroessenrechner_icon.png",
+    "calculator.jpg",
+    "rechner.jpg",
+    "rechner.webp",
 ])
 
 
-def image_base64(path):
+# ============================================================
+# BILD IN BASE64
+# ============================================================
+
+def image_to_base64(path):
     if path is None:
         return None
 
@@ -65,1151 +79,1217 @@ def image_base64(path):
         return None
 
 
-logo_b64 = image_base64(LOGO_PATH)
-calculator_b64 = image_base64(CALCULATOR_PATH)
+logo_base64 = image_to_base64(LOGO_PATH)
+calculator_base64 = image_to_base64(CALCULATOR_PATH)
 
 
 # ============================================================
-# HILFSFUNKTIONEN
+# HTML RENDERER
+#
+# Wichtig:
+# Wir benutzen st.html(), damit HTML niemals von Markdown
+# als Codeblock interpretiert werden kann.
 # ============================================================
 
-def number_de(value, decimals=2):
+def render_html(html):
+    html = html.strip()
+
+    if hasattr(st, "html"):
+        st.html(html)
+    else:
+        st.markdown(
+            html,
+            unsafe_allow_html=True,
+        )
+
+
+# ============================================================
+# ZAHLENFORMAT
+# ============================================================
+
+def format_number(value, decimals=2):
     try:
-        return (
-            f"{float(value):,.{decimals}f}"
+        number = float(value)
+
+        formatted = f"{number:,.{decimals}f}"
+
+        formatted = (
+            formatted
             .replace(",", "X")
             .replace(".", ",")
             .replace("X", ".")
         )
+
+        return formatted
+
     except Exception:
         return "0,00"
 
 
-def safe_div(a, b):
+def safe_division(a, b):
     if b == 0:
-        return 0
+        return 0.0
+
     return a / b
 
 
 # ============================================================
-# DESIGN / CSS
+# CSS
 # ============================================================
 
 st.markdown(
-    dedent(
-        """
-        <style>
+    """
+<style>
 
-        @import url(
-            'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap'
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap');
+
+
+/* ==========================================================
+   GRUNDLAYOUT
+   ========================================================== */
+
+.stApp {
+    background:
+        radial-gradient(
+            ellipse at 50% 0%,
+            rgba(205, 157, 45, 0.075),
+            transparent 38%
+        ),
+        radial-gradient(
+            ellipse at 50% 100%,
+            rgba(205, 157, 45, 0.035),
+            transparent 48%
+        ),
+        #020202;
+
+    color: #F2F2F2;
+
+    font-family:
+        "Inter",
+        Arial,
+        sans-serif;
+}
+
+
+.block-container {
+    max-width: 1320px;
+
+    padding-top: 22px;
+    padding-bottom: 45px;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+
+header {
+    visibility: hidden;
+}
+
+
+#MainMenu {
+    visibility: hidden;
+}
+
+
+footer {
+    visibility: hidden;
+}
+
+
+/* ==========================================================
+   HEADER
+   ========================================================== */
+
+.cb-header {
+    width: 100%;
+
+    min-height: 145px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 42px;
+
+    margin-bottom: 15px;
+}
+
+
+.cb-logo {
+    width: 195px;
+
+    height: 135px;
+
+    object-fit: contain;
+
+    display: block;
+
+    filter:
+        drop-shadow(
+            0 0 9px rgba(225, 184, 79, 0.18)
+        );
+}
+
+
+.cb-calculator {
+    width: 112px;
+
+    height: 112px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border:
+        2px solid rgba(225, 184, 79, 0.90);
+
+    border-radius: 15px;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(225, 184, 79, 0.14),
+            rgba(0, 0, 0, 0.25) 72%
         );
 
-        :root {
-            --cb-black: #020202;
-            --cb-panel: #090909;
-            --cb-panel-light: #111111;
-            --cb-gold-dark: #79551B;
-            --cb-gold: #C99525;
-            --cb-gold-light: #E1B84F;
-            --cb-gold-bright: #FFD66B;
-            --cb-gold-white: #FFE7A0;
-            --cb-text: #F1F1F1;
-            --cb-muted: #999999;
-        }
+    box-shadow:
+        0 0 8px rgba(225, 184, 79, 0.34),
+        0 0 25px rgba(225, 184, 79, 0.11),
+        inset 0 0 25px rgba(225, 184, 79, 0.05);
+}
 
 
-        /* ====================================================
-           GLOBAL
-           ==================================================== */
+.cb-calculator img {
+    width: 88px;
 
-        .stApp {
-            background:
-                radial-gradient(
-                    ellipse at 50% 0%,
-                    rgba(210, 160, 50, 0.075),
-                    transparent 35%
-                ),
-                radial-gradient(
-                    ellipse at 50% 100%,
-                    rgba(210, 160, 50, 0.035),
-                    transparent 45%
-                ),
-                #020202;
+    height: 88px;
 
-            color: var(--cb-text);
+    object-fit: contain;
 
-            font-family:
-                "Inter",
-                Arial,
-                sans-serif;
-        }
+    display: block;
 
+    filter:
+        drop-shadow(
+            0 0 8px rgba(255, 214, 107, 0.40)
+        );
+}
 
-        .block-container {
-            max-width: 1320px;
 
-            padding-top: 25px;
-            padding-left: 25px;
-            padding-right: 25px;
-            padding-bottom: 50px;
-        }
+.cb-calculator-fallback {
+    color: #E1B84F;
 
+    font-size: 52px;
 
-        header {
-            visibility: hidden;
-        }
+    line-height: 1;
 
+    text-shadow:
+        0 0 12px rgba(255, 211, 101, 0.30);
+}
 
-        #MainMenu {
-            visibility: hidden;
-        }
 
+/* ==========================================================
+   TITEL
+   ========================================================== */
 
-        footer {
-            visibility: hidden;
-        }
+.cb-title-frame {
+    position: relative;
 
+    width: 100%;
 
-        /* ====================================================
-           HEADER
-           ==================================================== */
+    min-height: 105px;
 
-        .cb-header {
-            width: 100%;
+    display: flex;
 
-            min-height: 145px;
+    flex-direction: column;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+    align-items: center;
 
-            gap: 40px;
+    justify-content: center;
 
-            margin-bottom: 18px;
-        }
+    box-sizing: border-box;
 
+    border:
+        2px solid rgba(201, 149, 37, 0.82);
 
-        .cb-logo {
-            width: 190px;
-            height: 135px;
+    border-radius: 13px;
 
-            object-fit: contain;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(20, 20, 20, 0.96),
+            rgba(5, 5, 5, 0.98)
+        );
 
-            filter:
-                drop-shadow(
-                    0 0 8px rgba(225, 184, 79, 0.18)
-                );
-        }
+    box-shadow:
+        0 0 8px rgba(214, 162, 44, 0.22),
+        inset 0 0 30px rgba(213, 164, 55, 0.035);
 
+    margin-bottom: 24px;
+}
 
-        .cb-calculator-icon {
-            width: 112px;
-            height: 112px;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+.cb-title {
+    color: #E1B84F;
 
-            border: 2px solid rgba(225, 184, 79, 0.85);
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            border-radius: 15px;
+    font-size:
+        clamp(28px, 3.2vw, 43px);
 
-            background:
-                radial-gradient(
-                    circle,
-                    rgba(225, 184, 79, 0.13),
-                    rgba(0, 0, 0, 0.25) 70%
-                );
+    font-weight: 600;
 
-            box-shadow:
-                0 0 8px rgba(225, 184, 79, 0.30),
-                0 0 25px rgba(225, 184, 79, 0.10),
-                inset 0 0 25px rgba(225, 184, 79, 0.05);
-        }
+    letter-spacing: 0.105em;
 
+    line-height: 1.1;
 
-        .cb-calculator-icon img {
-            width: 88px;
-            height: 88px;
+    text-align: center;
 
-            object-fit: contain;
+    text-transform: uppercase;
 
-            filter:
-                drop-shadow(
-                    0 0 8px rgba(255, 214, 107, 0.35)
-                );
-        }
+    text-shadow:
+        0 0 8px rgba(237, 185, 64, 0.24),
+        0 0 22px rgba(237, 185, 64, 0.10);
+}
 
 
-        /* ====================================================
-           TITEL
-           ==================================================== */
+.cb-subtitle {
+    margin-top: 7px;
 
-        .cb-title-frame {
-            position: relative;
+    color: #E8D08A;
 
-            width: 100%;
-            min-height: 105px;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+    font-size: 20px;
 
-            border: 2px solid rgba(201, 149, 37, 0.80);
+    font-weight: 400;
 
-            border-radius: 13px;
+    letter-spacing: 0.025em;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    rgba(21, 21, 21, 0.90),
-                    rgba(5, 5, 5, 0.97)
-                );
+    text-align: center;
+}
 
-            box-shadow:
-                0 0 8px rgba(214, 162, 44, 0.20),
-                inset 0 0 30px rgba(213, 164, 55, 0.035);
 
-            margin-bottom: 25px;
-        }
+.cb-title-line-left,
+.cb-title-line-right {
+    position: absolute;
 
+    top: 50%;
 
-        .cb-title-line-left,
-        .cb-title-line-right {
-            position: absolute;
+    width: 105px;
 
-            top: 50%;
+    height: 1px;
 
-            width: 105px;
-            height: 1px;
+    transform: translateY(-50%);
 
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    var(--cb-gold-light)
-                );
+    box-shadow:
+        0 0 7px rgba(255, 209, 92, 0.35);
+}
 
-            box-shadow:
-                0 0 6px rgba(255, 209, 92, 0.35);
-        }
 
+.cb-title-line-left {
+    left: 42px;
 
-        .cb-title-line-left {
-            left: 42px;
-        }
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            #E1B84F
+        );
+}
 
 
-        .cb-title-line-right {
-            right: 42px;
+.cb-title-line-right {
+    right: 42px;
 
-            background:
-                linear-gradient(
-                    90deg,
-                    var(--cb-gold-light),
-                    transparent
-                );
-        }
+    background:
+        linear-gradient(
+            90deg,
+            #E1B84F,
+            transparent
+        );
+}
 
 
-        .cb-title {
-            color: var(--cb-gold-light);
+/* ==========================================================
+   PANELS
+   ========================================================== */
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+.cb-panel {
+    box-sizing: border-box;
 
-            font-size: clamp(27px, 3.1vw, 43px);
+    width: 100%;
 
-            font-weight: 600;
+    min-height: 680px;
 
-            letter-spacing: 0.105em;
+    padding: 26px;
 
-            line-height: 1.1;
+    border:
+        1px solid rgba(126, 126, 126, 0.48);
 
-            text-transform: uppercase;
+    border-radius: 14px;
 
-            text-align: center;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 18, 18, 0.98),
+            rgba(5, 5, 5, 0.99)
+        );
 
-            text-shadow:
-                0 0 8px rgba(237, 185, 64, 0.22),
-                0 0 22px rgba(237, 185, 64, 0.10);
-        }
+    box-shadow:
+        inset 0 0 35px rgba(255, 255, 255, 0.015),
+        0 12px 35px rgba(0, 0, 0, 0.35);
+}
 
 
-        .cb-subtitle {
-            margin-top: 7px;
+.cb-panel-title {
+    display: flex;
 
-            color: #E8D08A;
+    align-items: center;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    gap: 12px;
 
-            font-size: 20px;
+    margin-bottom: 24px;
 
-            font-weight: 400;
+    color: #E1B84F;
 
-            letter-spacing: 0.025em;
-        }
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
+    font-size: 21px;
 
-        /* ====================================================
-           HAUPTPANELS
-           ==================================================== */
+    font-weight: 500;
 
-        .cb-panel {
-            position: relative;
+    letter-spacing: 0.025em;
 
-            height: 100%;
+    text-transform: uppercase;
+}
 
-            min-height: 680px;
 
-            padding: 26px;
+.cb-panel-icon {
+    width: 32px;
 
-            border: 1px solid rgba(126, 126, 126, 0.45);
+    height: 32px;
 
-            border-radius: 14px;
+    display: flex;
 
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(18, 18, 18, 0.97),
-                    rgba(5, 5, 5, 0.99)
-                );
+    align-items: center;
 
-            box-shadow:
-                inset 0 0 35px rgba(255, 255, 255, 0.015),
-                0 12px 35px rgba(0, 0, 0, 0.35);
-        }
+    justify-content: center;
 
+    color: #E1B84F;
 
-        .cb-panel-title {
-            display: flex;
+    font-size: 26px;
 
-            align-items: center;
+    text-shadow:
+        0 0 9px rgba(255, 205, 91, 0.30);
+}
 
-            gap: 12px;
 
-            margin-bottom: 25px;
+/* ==========================================================
+   STREAMLIT INPUTS
+   ========================================================== */
 
-            color: var(--cb-gold-light);
+div[data-baseweb="input"] > div {
+    background:
+        linear-gradient(
+            180deg,
+            #111111,
+            #080808
+        ) !important;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    border:
+        1px solid rgba(164, 125, 51, 0.58) !important;
 
-            font-size: 21px;
+    border-radius: 7px !important;
 
-            font-weight: 500;
+    min-height: 52px !important;
+}
 
-            letter-spacing: 0.025em;
 
-            text-transform: uppercase;
-        }
+div[data-baseweb="select"] > div {
+    background:
+        linear-gradient(
+            180deg,
+            #111111,
+            #080808
+        ) !important;
 
+    border:
+        1px solid rgba(164, 125, 51, 0.58) !important;
 
-        .cb-panel-icon {
-            width: 32px;
-            height: 32px;
+    border-radius: 7px !important;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+    min-height: 52px !important;
+}
 
-            color: var(--cb-gold-light);
 
-            font-size: 25px;
+input {
+    color: #F2F2F2 !important;
 
-            text-shadow:
-                0 0 9px rgba(255, 205, 91, 0.28);
-        }
+    font-family:
+        "Inter",
+        Arial,
+        sans-serif !important;
 
+    font-size: 16px !important;
+}
 
-        /* ====================================================
-           INPUTS
-           ==================================================== */
 
-        label {
-            color: #E5E5E5 !important;
+label {
+    color: #E6E6E6 !important;
 
-            font-family:
-                "Inter",
-                Arial,
-                sans-serif !important;
+    font-family:
+        "Inter",
+        Arial,
+        sans-serif !important;
 
-            font-size: 15px !important;
+    font-size: 15px !important;
+}
 
-            font-weight: 400 !important;
-        }
 
+[data-baseweb="select"] * {
+    color: #F2F2F2 !important;
+}
 
-        div[data-baseweb="input"] > div {
-            background:
-                linear-gradient(
-                    180deg,
-                    #111111,
-                    #080808
-                ) !important;
 
-            border:
-                1px solid rgba(164, 125, 51, 0.55) !important;
+/* ==========================================================
+   RADIO BUTTONS
+   ========================================================== */
 
-            border-radius: 7px !important;
+.stRadio > div {
+    width: 100%;
+}
 
-            min-height: 54px !important;
-        }
 
+.stRadio [role="radiogroup"] {
+    width: 100%;
 
-        div[data-baseweb="select"] > div {
-            background:
-                linear-gradient(
-                    180deg,
-                    #111111,
-                    #080808
-                ) !important;
+    display: flex;
 
-            border:
-                1px solid rgba(164, 125, 51, 0.55) !important;
+    gap: 8px;
+}
 
-            border-radius: 7px !important;
 
-            min-height: 54px !important;
-        }
+.stRadio [role="radio"] {
+    flex: 1;
 
+    min-height: 51px;
 
-        input {
-            color: #F1F1F1 !important;
+    display: flex;
 
-            font-family:
-                "Inter",
-                Arial,
-                sans-serif !important;
+    align-items: center;
 
-            font-size: 16px !important;
-        }
+    justify-content: center;
 
+    box-sizing: border-box;
 
-        [data-baseweb="select"] * {
-            color: #F1F1F1 !important;
-        }
+    border:
+        1px solid rgba(115, 115, 115, 0.58);
 
+    border-radius: 7px;
 
-        /* ====================================================
-           RADIO
-           ==================================================== */
+    background:
+        linear-gradient(
+            180deg,
+            #111111,
+            #080808
+        );
 
-        .stRadio > div {
-            gap: 8px;
-        }
+    color: #EEEEEE;
 
+    transition:
+        all 0.2s ease;
+}
 
-        .stRadio [role="radiogroup"] {
-            display: flex;
 
-            width: 100%;
+.stRadio [role="radio"]:hover {
+    border-color:
+        rgba(225, 184, 79, 0.70);
+}
 
-            gap: 8px;
-        }
 
+.stRadio [role="radio"]:has(input:checked) {
+    border-color:
+        rgba(218, 170, 56, 0.95);
 
-        .stRadio [role="radio"] {
-            flex: 1;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(125, 88, 23, 0.68),
+            rgba(51, 36, 11, 0.78)
+        );
 
-            min-height: 51px;
+    box-shadow:
+        0 0 10px rgba(218, 170, 56, 0.14);
+}
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
 
-            border:
-                1px solid rgba(115, 115, 115, 0.55);
+/* ==========================================================
+   ERGEBNIS
+   ========================================================== */
 
-            border-radius: 7px;
+.cb-result {
+    width: 100%;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    #111111,
-                    #080808
-                );
+    text-align: center;
 
-            color: #EEEEEE;
+    padding-top: 8px;
 
-            transition:
-                all 0.2s ease;
-        }
+    padding-bottom: 4px;
+}
 
 
-        .stRadio [role="radio"]:has(input:checked) {
-            border-color:
-                rgba(218, 170, 56, 0.90);
+.cb-result-label {
+    display: flex;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    rgba(125, 88, 23, 0.65),
-                    rgba(51, 36, 11, 0.75)
-                );
+    align-items: center;
 
-            box-shadow:
-                0 0 10px rgba(218, 170, 56, 0.12);
-        }
+    justify-content: center;
 
+    gap: 18px;
 
-        /* ====================================================
-           ERGEBNIS
-           ==================================================== */
+    color: #E1B84F;
 
-        .cb-result-top {
-            text-align: center;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            margin-top: 24px;
-            margin-bottom: 18px;
-        }
+    font-size: 22px;
 
+    font-weight: 500;
 
-        .cb-result-label {
-            display: flex;
+    letter-spacing: 0.035em;
 
-            align-items: center;
-            justify-content: center;
+    text-transform: uppercase;
+}
 
-            gap: 18px;
 
-            color: var(--cb-gold-light);
+.cb-result-label::before,
+.cb-result-label::after {
+    content: "";
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    width: 82px;
 
-            font-size: 22px;
+    height: 1px;
 
-            font-weight: 500;
+    flex-shrink: 0;
 
-            letter-spacing: 0.035em;
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(225, 184, 79, 0.90)
+        );
+}
 
-            text-transform: uppercase;
-        }
 
+.cb-result-label::after {
+    background:
+        linear-gradient(
+            90deg,
+            rgba(225, 184, 79, 0.90),
+            transparent
+        );
+}
 
-        .cb-result-label::before,
-        .cb-result-label::after {
-            content: "";
 
-            width: 82px;
-            height: 1px;
+.cb-result-number {
+    margin-top: 24px;
 
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(225, 184, 79, 0.85)
-                );
-        }
+    color: #FFE7A0;
 
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-        .cb-result-label::after {
-            background:
-                linear-gradient(
-                    90deg,
-                    rgba(225, 184, 79, 0.85),
-                    transparent
-                );
-        }
+    font-size:
+        clamp(50px, 5vw, 76px);
 
+    font-weight: 700;
 
-        .cb-result-number {
-            margin-top: 23px;
+    line-height: 1;
 
-            color: var(--cb-gold-white);
+    letter-spacing: -0.025em;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    text-shadow:
+        0 0 7px rgba(255, 216, 111, 0.60),
+        0 0 20px rgba(255, 203, 73, 0.34),
+        0 0 42px rgba(255, 203, 73, 0.17);
+}
 
-            font-size: clamp(52px, 5vw, 77px);
 
-            font-weight: 700;
+.cb-result-units {
+    margin-top: 14px;
 
-            line-height: 1;
+    color: #EEEEEE;
 
-            letter-spacing: -0.025em;
+    font-family:
+        "Inter",
+        Arial,
+        sans-serif;
 
-            text-shadow:
-                0 0 7px rgba(255, 216, 111, 0.55),
-                0 0 20px rgba(255, 203, 73, 0.32),
-                0 0 42px rgba(255, 203, 73, 0.16);
-        }
+    font-size: 25px;
 
+    font-weight: 400;
+}
 
-        .cb-result-units {
-            margin-top: 14px;
 
-            color: #EEEEEE;
+.cb-gold-divider {
+    width: 100%;
 
-            font-family:
-                "Inter",
-                Arial,
-                sans-serif;
+    height: 1px;
 
-            font-size: 25px;
+    margin-top: 21px;
 
-            font-weight: 400;
-        }
+    margin-bottom: 9px;
 
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(201, 149, 37, 0.10),
+            rgba(235, 194, 89, 0.95),
+            rgba(201, 149, 37, 0.10),
+            transparent
+        );
 
-        .cb-gold-divider {
-            width: 100%;
+    box-shadow:
+        0 0 8px rgba(225, 184, 79, 0.25);
+}
 
-            height: 1px;
 
-            margin: 20px 0 12px;
+/* ==========================================================
+   METRIKEN
+   ========================================================== */
 
-            background:
-                linear-gradient(
-                    90deg,
-                    transparent,
-                    rgba(201, 149, 37, 0.10),
-                    rgba(235, 194, 89, 0.95),
-                    rgba(201, 149, 37, 0.10),
-                    transparent
-                );
+.cb-metric {
+    width: 100%;
 
-            box-shadow:
-                0 0 8px rgba(225, 184, 79, 0.25);
-        }
+    min-height: 47px;
 
+    display: flex;
 
-        /* ====================================================
-           METRIKEN
-           ==================================================== */
+    align-items: center;
 
-        .cb-metric {
-            display: flex;
+    justify-content: space-between;
 
-            justify-content: space-between;
+    box-sizing: border-box;
 
-            align-items: center;
+    border-bottom:
+        1px solid rgba(130, 130, 130, 0.19);
 
-            min-height: 47px;
+    color: #E6E6E6;
 
-            border-bottom:
-                1px solid rgba(130, 130, 130, 0.19);
+    font-family:
+        "Inter",
+        Arial,
+        sans-serif;
 
-            color: #E6E6E6;
+    font-size: 16px;
+}
 
-            font-family:
-                "Inter",
-                Arial,
-                sans-serif;
 
-            font-size: 16px;
-        }
+.cb-metric-value {
+    color: #E1B84F;
 
+    font-size: 18px;
 
-        .cb-metric-value {
-            color: var(--cb-gold-light);
+    font-weight: 500;
 
-            font-size: 18px;
+    text-align: right;
+}
 
-            font-weight: 500;
-        }
 
+.cb-metric-unit {
+    color: #E7E7E7;
 
-        .cb-metric-unit {
-            color: #E7E7E7;
+    font-size: 14px;
 
-            font-size: 14px;
+    margin-left: 4px;
+}
 
-            margin-left: 4px;
-        }
 
+/* ==========================================================
+   MARGIN
+   ========================================================== */
 
-        /* ====================================================
-           MARGIN
-           ==================================================== */
+.cb-margin-title {
+    display: flex;
 
-        .cb-margin-title {
-            display: flex;
+    align-items: center;
 
-            align-items: center;
+    gap: 10px;
 
-            gap: 10px;
+    margin-top: 24px;
 
-            margin-top: 24px;
-            margin-bottom: 10px;
+    margin-bottom: 10px;
 
-            color: var(--cb-gold-light);
+    color: #E1B84F;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            font-size: 20px;
+    font-size: 20px;
 
-            font-weight: 500;
+    font-weight: 500;
 
-            text-transform: uppercase;
+    letter-spacing: 0.025em;
 
-            letter-spacing: 0.025em;
-        }
+    text-transform: uppercase;
+}
 
 
-        /* ====================================================
-           RISIKOÜBERSICHT
-           ==================================================== */
+/* ==========================================================
+   RISIKOÜBERSICHT
+   ========================================================== */
 
-        .cb-risk-panel {
-            position: relative;
+.cb-risk-panel {
+    width: 100%;
 
-            overflow: hidden;
+    min-height: 195px;
 
-            margin-top: 20px;
+    box-sizing: border-box;
 
-            min-height: 195px;
+    margin-top: 20px;
 
-            padding: 25px 28px;
+    padding: 25px 28px;
 
-            border:
-                1px solid rgba(126, 126, 126, 0.48);
+    overflow: hidden;
 
-            border-radius: 14px;
+    border:
+        1px solid rgba(126, 126, 126, 0.48);
 
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(16, 16, 16, 0.98),
-                    rgba(5, 5, 5, 0.98)
-                );
-        }
+    border-radius: 14px;
 
+    background:
+        linear-gradient(
+            145deg,
+            rgba(16, 16, 16, 0.98),
+            rgba(5, 5, 5, 0.98)
+        );
 
-        .cb-risk-title {
-            display: flex;
+    box-shadow:
+        inset 0 0 35px rgba(255, 255, 255, 0.012);
+}
 
-            align-items: center;
 
-            gap: 12px;
+.cb-risk-title {
+    display: flex;
 
-            color: var(--cb-gold-light);
+    align-items: center;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    gap: 12px;
 
-            font-size: 20px;
+    color: #E1B84F;
 
-            font-weight: 500;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            text-transform: uppercase;
+    font-size: 20px;
 
-            letter-spacing: 0.025em;
-        }
+    font-weight: 500;
 
+    letter-spacing: 0.025em;
 
-        .cb-risk-content {
-            display: flex;
+    text-transform: uppercase;
+}
 
-            align-items: center;
 
-            gap: 35px;
+.cb-risk-content {
+    display: flex;
 
-            margin-top: 15px;
-        }
+    align-items: center;
 
+    gap: 35px;
 
-        .cb-risk-circle {
-            width: 126px;
-            height: 126px;
+    margin-top: 15px;
+}
 
-            flex: 0 0 126px;
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+.cb-risk-circle {
+    width: 126px;
 
-            border-radius: 50%;
+    height: 126px;
 
-            position: relative;
-        }
+    flex: 0 0 126px;
 
+    position: relative;
 
-        .cb-risk-circle::after {
-            content: "";
+    display: flex;
 
-            position: absolute;
+    align-items: center;
 
-            inset: 11px;
+    justify-content: center;
 
-            border-radius: 50%;
+    border-radius: 50%;
+}
 
-            background: #070707;
-        }
 
+.cb-risk-circle::after {
+    content: "";
 
-        .cb-risk-circle-text {
-            position: relative;
+    position: absolute;
 
-            z-index: 2;
+    inset: 11px;
 
-            text-align: center;
+    border-radius: 50%;
 
-            color: var(--cb-gold-light);
+    background: #070707;
+}
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
 
-            font-size: 24px;
+.cb-risk-circle-text {
+    position: relative;
 
-            font-weight: 500;
-        }
+    z-index: 2;
 
+    color: #E1B84F;
 
-        .cb-risk-money {
-            color: var(--cb-gold-light);
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    font-size: 24px;
 
-            font-size: 24px;
+    font-weight: 500;
 
-            font-weight: 500;
-        }
+    text-align: center;
+}
 
 
-        .cb-risk-account {
-            margin-top: 3px;
+.cb-risk-money {
+    color: #E1B84F;
 
-            color: #F0F0F0;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            font-size: 16px;
-        }
+    font-size: 24px;
 
+    font-weight: 500;
+}
 
-        .cb-risk-blocks {
-            display: flex;
 
-            gap: 3px;
+.cb-risk-account {
+    margin-top: 3px;
 
-            margin-top: 18px;
+    color: #F0F0F0;
 
-            max-width: 530px;
+    font-size: 16px;
+}
 
-            overflow: hidden;
-        }
 
+.cb-risk-blocks {
+    display: flex;
 
-        .cb-risk-block {
-            width: 11px;
-            height: 25px;
+    gap: 3px;
 
-            flex: 0 0 11px;
+    margin-top: 18px;
 
-            border:
-                1px solid rgba(110, 110, 110, 0.35);
+    max-width: 530px;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    #333333,
-                    #191919
-                );
-        }
+    overflow: hidden;
+}
 
 
-        .cb-risk-block.active {
-            border-color:
-                rgba(224, 182, 70, 0.95);
+.cb-risk-block {
+    width: 11px;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    #E1B84F,
-                    #8A611B
-                );
+    height: 25px;
 
-            box-shadow:
-                0 0 5px rgba(224, 182, 70, 0.24);
-        }
+    flex: 0 0 11px;
 
+    box-sizing: border-box;
 
-        /* ====================================================
-           RISIKOHINWEIS
-           ==================================================== */
+    border:
+        1px solid rgba(110, 110, 110, 0.35);
 
-        .cb-warning-panel {
-            position: relative;
+    background:
+        linear-gradient(
+            180deg,
+            #333333,
+            #191919
+        );
+}
 
-            overflow: hidden;
 
-            margin-top: 20px;
+.cb-risk-block.active {
+    border-color:
+        rgba(224, 182, 70, 0.95);
 
-            padding: 22px 28px;
+    background:
+        linear-gradient(
+            180deg,
+            #E1B84F,
+            #8A611B
+        );
 
-            border:
-                1px solid rgba(170, 122, 22, 0.78);
+    box-shadow:
+        0 0 5px rgba(224, 182, 70, 0.24);
+}
 
-            border-radius: 14px;
 
-            background:
-                linear-gradient(
-                    145deg,
-                    rgba(16, 16, 16, 0.97),
-                    rgba(5, 5, 5, 0.99)
-                );
+/* ==========================================================
+   RISIKOHINWEIS
+   ========================================================== */
 
-            box-shadow:
-                inset 0 0 30px rgba(200, 150, 40, 0.018);
-        }
+.cb-warning-panel {
+    width: 100%;
 
+    box-sizing: border-box;
 
-        .cb-warning-content {
-            display: flex;
+    margin-top: 20px;
 
-            gap: 22px;
+    padding: 22px 28px;
 
-            align-items: flex-start;
-        }
+    overflow: hidden;
 
+    border:
+        1px solid rgba(170, 122, 22, 0.80);
 
-        .cb-warning-icon {
-            color: var(--cb-gold-light);
+    border-radius: 14px;
 
-            font-size: 42px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(16, 16, 16, 0.97),
+            rgba(5, 5, 5, 0.99)
+        );
 
-            line-height: 1;
+    box-shadow:
+        inset 0 0 30px rgba(200, 150, 40, 0.018);
+}
 
-            text-shadow:
-                0 0 10px rgba(232, 190, 78, 0.22);
-        }
 
+.cb-warning-content {
+    display: flex;
 
-        .cb-warning-title {
-            color: var(--cb-gold-light);
+    align-items: flex-start;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    gap: 22px;
+}
 
-            font-size: 19px;
 
-            font-weight: 500;
+.cb-warning-icon {
+    color: #E1B84F;
 
-            text-transform: uppercase;
+    font-size: 42px;
 
-            letter-spacing: 0.035em;
+    line-height: 1;
 
-            margin-bottom: 8px;
-        }
+    text-shadow:
+        0 0 10px rgba(232, 190, 78, 0.22);
+}
 
 
-        .cb-warning-text {
-            color: #E5E5E5;
+.cb-warning-title {
+    margin-bottom: 8px;
 
-            font-family:
-                "Inter",
-                Arial,
-                sans-serif;
+    color: #E1B84F;
 
-            font-size: 13px;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            line-height: 1.55;
+    font-size: 19px;
 
-            max-width: 1050px;
-        }
+    font-weight: 500;
 
+    letter-spacing: 0.035em;
 
-        /* ====================================================
-           BUTTON
-           ==================================================== */
+    text-transform: uppercase;
+}
 
-        .stButton > button {
-            width: 100%;
 
-            min-height: 50px;
+.cb-warning-text {
+    max-width: 1050px;
 
-            border:
-                1px solid rgba(201, 149, 37, 0.65);
+    color: #E5E5E5;
 
-            border-radius: 7px;
+    font-family:
+        "Inter",
+        Arial,
+        sans-serif;
 
-            background:
-                linear-gradient(
-                    180deg,
-                    #18130A,
-                    #0B0A08
-                );
+    font-size: 13px;
 
-            color: var(--cb-gold-light);
+    line-height: 1.55;
+}
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
 
-            font-weight: 500;
+/* ==========================================================
+   FEHLERMELDUNG
+   ========================================================== */
 
-            transition:
-                all 0.2s ease;
-        }
+.cb-error {
+    margin-top: 15px;
 
+    padding: 13px 16px;
 
-        .stButton > button:hover {
-            border-color:
-                var(--cb-gold-bright);
+    border:
+        1px solid rgba(190, 80, 60, 0.65);
 
-            box-shadow:
-                0 0 13px rgba(221, 175, 64, 0.20);
+    border-radius: 8px;
 
-            transform:
-                translateY(-1px);
-        }
+    background:
+        rgba(70, 20, 15, 0.25);
 
+    color: #F0B0A0;
 
-        /* ====================================================
-           FOOTER
-           ==================================================== */
+    font-size: 14px;
+}
 
-        .cb-footer {
-            margin-top: 17px;
 
-            text-align: center;
+/* ==========================================================
+   FOOTER
+   ========================================================== */
 
-            color: var(--cb-gold-light);
+.cb-footer {
+    margin-top: 18px;
 
-            font-family:
-                "Montserrat",
-                Arial,
-                sans-serif;
+    color: #C99525;
 
-            font-size: 11px;
+    font-family:
+        "Montserrat",
+        Arial,
+        sans-serif;
 
-            letter-spacing: 0.30em;
+    font-size: 11px;
 
-            text-transform: uppercase;
-        }
+    letter-spacing: 0.30em;
 
+    text-align: center;
 
-        /* ====================================================
-           MOBILE
-           ==================================================== */
+    text-transform: uppercase;
+}
 
-        @media (max-width: 850px) {
 
-            .block-container {
-                padding-left: 12px;
-                padding-right: 12px;
-                padding-top: 15px;
-            }
+/* ==========================================================
+   MOBILE
+   ========================================================== */
 
-            .cb-header {
-                min-height: 105px;
-                gap: 18px;
-            }
+@media (max-width: 850px) {
 
-            .cb-logo {
-                width: 150px;
-                height: 100px;
-            }
+    .block-container {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 14px;
+    }
 
-            .cb-calculator-icon {
-                width: 78px;
-                height: 78px;
-            }
+    .cb-header {
+        min-height: 105px;
+        gap: 18px;
+    }
 
-            .cb-calculator-icon img {
-                width: 60px;
-                height: 60px;
-            }
+    .cb-logo {
+        width: 150px;
+        height: 100px;
+    }
 
-            .cb-title-frame {
-                min-height: 90px;
-            }
+    .cb-calculator {
+        width: 78px;
+        height: 78px;
+    }
 
-            .cb-title {
-                font-size: 23px;
-                letter-spacing: 0.055em;
-            }
+    .cb-calculator img {
+        width: 60px;
+        height: 60px;
+    }
 
-            .cb-subtitle {
-                font-size: 15px;
-            }
+    .cb-title-frame {
+        min-height: 90px;
+    }
 
-            .cb-title-line-left,
-            .cb-title-line-right {
-                display: none;
-            }
+    .cb-title {
+        font-size: 23px;
+        letter-spacing: 0.055em;
+    }
 
-            .cb-panel {
-                min-height: 0;
-                padding: 19px;
-            }
+    .cb-subtitle {
+        font-size: 15px;
+    }
 
-            .cb-result-number {
-                font-size: 48px;
-            }
+    .cb-title-line-left,
+    .cb-title-line-right {
+        display: none;
+    }
 
-            .cb-result-units {
-                font-size: 20px;
-            }
+    .cb-panel {
+        min-height: 0;
+        padding: 19px;
+    }
 
-            .cb-risk-content {
-                gap: 20px;
-            }
+    .cb-result-number {
+        font-size: 48px;
+    }
 
-            .cb-risk-circle {
-                width: 105px;
-                height: 105px;
-                flex-basis: 105px;
-            }
+    .cb-result-units {
+        font-size: 20px;
+    }
 
-            .cb-risk-circle::after {
-                inset: 9px;
-            }
+    .cb-risk-content {
+        gap: 20px;
+    }
 
-            .cb-risk-money {
-                font-size: 19px;
-            }
+    .cb-risk-circle {
+        width: 105px;
+        height: 105px;
+        flex-basis: 105px;
+    }
 
-            .cb-risk-block {
-                width: 7px;
-                flex-basis: 7px;
-            }
+    .cb-risk-circle::after {
+        inset: 9px;
+    }
 
-            .cb-warning-content {
-                gap: 14px;
-            }
+    .cb-risk-money {
+        font-size: 19px;
+    }
 
-            .cb-warning-icon {
-                font-size: 31px;
-            }
+    .cb-risk-block {
+        width: 7px;
+        flex-basis: 7px;
+    }
 
-            .cb-warning-text {
-                font-size: 12px;
-            }
+    .cb-warning-content {
+        gap: 14px;
+    }
 
-            .cb-footer {
-                letter-spacing: 0.15em;
-            }
-        }
+    .cb-warning-icon {
+        font-size: 31px;
+    }
 
-        </style>
-        """
-    ),
+    .cb-warning-text {
+        font-size: 12px;
+    }
+
+    .cb-footer {
+        letter-spacing: 0.15em;
+    }
+}
+
+</style>
+""",
     unsafe_allow_html=True,
 )
 
@@ -1218,67 +1298,60 @@ st.markdown(
 # HEADER
 # ============================================================
 
-if logo_b64:
-    logo_html = f"""
-    <img
-        class="cb-logo"
-        src="data:image/png;base64,{logo_b64}"
-        alt="Count Or Break"
-    >
-    """
+if logo_base64:
+
+    logo_html = (
+        '<img class="cb-logo" '
+        'src="data:image/png;base64,'
+        + logo_base64
+        + '" '
+        'alt="Count Or Break">'
+    )
+
 else:
-    logo_html = """
-    <div
-        style="
-            color:#E1B84F;
-            font-family:Montserrat,Arial,sans-serif;
-            font-size:28px;
-            font-weight:600;
-            letter-spacing:3px;
-        "
-    >
-        COUNT OR BREAK
-    </div>
-    """
+
+    logo_html = (
+        '<div style="'
+        'color:#E1B84F;'
+        'font-family:Montserrat,Arial,sans-serif;'
+        'font-size:26px;'
+        'font-weight:600;'
+        'letter-spacing:3px;'
+        'text-align:center;'
+        '">'
+        'COUNT OR BREAK'
+        '</div>'
+    )
 
 
-if calculator_b64:
-    calculator_html = f"""
-    <img
-        src="data:image/png;base64,{calculator_b64}"
-        alt="Positionsgrößenrechner"
-    >
-    """
+if calculator_base64:
+
+    calculator_html = (
+        '<img '
+        'src="data:image/png;base64,'
+        + calculator_base64
+        + '" '
+        'alt="Positionsgrößenrechner">'
+    )
+
 else:
-    calculator_html = """
-    <div
-        style="
-            color:#E1B84F;
-            font-size:50px;
-        "
-    >
-        🧮
-    </div>
-    """
+
+    calculator_html = (
+        '<div class="cb-calculator-fallback">'
+        '🧮'
+        '</div>'
+    )
 
 
-st.markdown(
-    dedent(
-        f"""
-        <div class="cb-header">
-
-            <div>
-                {logo_html}
-            </div>
-
-            <div class="cb-calculator-icon">
-                {calculator_html}
-            </div>
-
-        </div>
-        """
-    ),
-    unsafe_allow_html=True,
+render_html(
+    '<div class="cb-header">'
+    '<div>'
+    + logo_html
+    + '</div>'
+    '<div class="cb-calculator">'
+    + calculator_html
+    + '</div>'
+    '</div>'
 )
 
 
@@ -1286,27 +1359,17 @@ st.markdown(
 # TITEL
 # ============================================================
 
-st.markdown(
-    dedent(
-        """
-        <div class="cb-title-frame">
-
-            <div class="cb-title-line-left"></div>
-
-            <div class="cb-title">
-                Positionsgrößenrechner
-            </div>
-
-            <div class="cb-subtitle">
-                Risk first. Profits second.
-            </div>
-
-            <div class="cb-title-line-right"></div>
-
-        </div>
-        """
-    ),
-    unsafe_allow_html=True,
+render_html(
+    '<div class="cb-title-frame">'
+    '<div class="cb-title-line-left"></div>'
+    '<div class="cb-title">'
+    'POSITIONSGRÖSSENRECHNER'
+    '</div>'
+    '<div class="cb-subtitle">'
+    'Risk first. Profits second.'
+    '</div>'
+    '<div class="cb-title-line-right"></div>'
+    '</div>'
 )
 
 
@@ -1326,29 +1389,19 @@ left_col, right_col = st.columns(
 
 with left_col:
 
-    st.markdown(
-        dedent(
-            """
-            <div class="cb-panel">
-
-                <div class="cb-panel-title">
-
-                    <div class="cb-panel-icon">
-                        ⚖
-                    </div>
-
-                    <div>
-                        Trade-Eingaben
-                    </div>
-
-                </div>
-
-            </div>
-            """
-        ),
-        unsafe_allow_html=True,
+    render_html(
+        '<div class="cb-panel">'
+        '<div class="cb-panel-title">'
+        '<div class="cb-panel-icon">⚖</div>'
+        '<div>TRADE-EINGABEN</div>'
+        '</div>'
+        '</div>'
     )
 
+
+    # --------------------------------------------------------
+    # INSTRUMENT
+    # --------------------------------------------------------
 
     instrument = st.selectbox(
         "Instrument",
@@ -1366,9 +1419,13 @@ with left_col:
             "GER40",
             "BTC/USD",
             "ETH/USD",
-        ]
+        ],
     )
 
+
+    # --------------------------------------------------------
+    # RICHTUNG
+    # --------------------------------------------------------
 
     direction = st.radio(
         "Richtung",
@@ -1383,7 +1440,13 @@ with left_col:
     is_long = direction.startswith("↗")
 
 
-    account_col, currency_col = st.columns([3, 1])
+    # --------------------------------------------------------
+    # KONTOGRÖSSE
+    # --------------------------------------------------------
+
+    account_col, currency_col = st.columns(
+        [3, 1]
+    )
 
 
     with account_col:
@@ -1401,11 +1464,21 @@ with left_col:
 
         currency = st.selectbox(
             "Währung",
-            ["EUR", "USD", "GBP"]
+            [
+                "EUR",
+                "USD",
+                "GBP",
+            ],
         )
 
 
-    risk_col, risk_unit_col = st.columns([3, 1])
+    # --------------------------------------------------------
+    # RISIKO
+    # --------------------------------------------------------
+
+    risk_col, risk_unit_col = st.columns(
+        [3, 1]
+    )
 
 
     with risk_col:
@@ -1422,34 +1495,28 @@ with left_col:
 
     with risk_unit_col:
 
-        st.markdown(
-            dedent(
-                """
-                <div
-                    style="
-                        margin-top:29px;
-                        height:54px;
-                        border:1px solid rgba(164,125,51,0.55);
-                        border-radius:7px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        background:#090909;
-                        color:#EEEEEE;
-                        font-size:15px;
-                    "
-                >
-                    %
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
+        render_html(
+            '<div style="'
+            'margin-top:29px;'
+            'height:52px;'
+            'box-sizing:border-box;'
+            'border:1px solid rgba(164,125,51,0.58);'
+            'border-radius:7px;'
+            'display:flex;'
+            'align-items:center;'
+            'justify-content:center;'
+            'background:#090909;'
+            'color:#EEEEEE;'
+            'font-size:15px;'
+            '">'
+            '%'
+            '</div>'
         )
 
 
-    # ========================================================
-    # STANDARDWERTE
-    # ========================================================
+    # --------------------------------------------------------
+    # DEFAULT-WERTE
+    # --------------------------------------------------------
 
     if instrument in [
         "EUR/USD",
@@ -1464,6 +1531,7 @@ with left_col:
         price_decimals = 5
         price_step = 0.00001
 
+
     elif instrument == "USD/JPY":
 
         entry_default = 150.000
@@ -1471,12 +1539,14 @@ with left_col:
         price_decimals = 3
         price_step = 0.001
 
+
     elif instrument == "XAU/USD":
 
         entry_default = 3400.00
         stop_default = 3390.00
         price_decimals = 2
         price_step = 0.10
+
 
     elif instrument in [
         "NAS100",
@@ -1490,12 +1560,14 @@ with left_col:
         price_decimals = 2
         price_step = 1.0
 
+
     elif instrument == "BTC/USD":
 
         entry_default = 100000.00
         stop_default = 99000.00
         price_decimals = 2
         price_step = 10.0
+
 
     else:
 
@@ -1504,6 +1576,10 @@ with left_col:
         price_decimals = 2
         price_step = 1.0
 
+
+    # --------------------------------------------------------
+    # EINSTIEG
+    # --------------------------------------------------------
 
     entry_price = st.number_input(
         "Einstiegskurs",
@@ -1514,6 +1590,10 @@ with left_col:
     )
 
 
+    # --------------------------------------------------------
+    # STOP LOSS
+    # --------------------------------------------------------
+
     stop_loss = st.number_input(
         "Stop-Loss Kurs",
         min_value=0.00001,
@@ -1523,6 +1603,10 @@ with left_col:
     )
 
 
+    # --------------------------------------------------------
+    # TAKE PROFIT
+    # --------------------------------------------------------
+
     take_profit = st.number_input(
         "Take-Profit Kurs (optional)",
         min_value=0.0,
@@ -1531,6 +1615,10 @@ with left_col:
         format=f"%.{price_decimals}f",
     )
 
+
+    # --------------------------------------------------------
+    # HEBEL
+    # --------------------------------------------------------
 
     leverage = st.number_input(
         "Verwendeter Hebel",
@@ -1546,11 +1634,20 @@ with left_col:
 # BERECHNUNG
 # ============================================================
 
-max_risk = account_size * risk_percent / 100
+max_risk = (
+    account_size
+    * risk_percent
+    / 100.0
+)
 
-price_distance = abs(entry_price - stop_loss)
+
+price_distance = abs(
+    entry_price - stop_loss
+)
+
 
 valid_trade = True
+
 error_message = ""
 
 
@@ -1559,7 +1656,8 @@ if price_distance <= 0:
     valid_trade = False
 
     error_message = (
-        "Einstieg und Stop-Loss müssen unterschiedlich sein."
+        "Einstiegskurs und Stop-Loss Kurs "
+        "dürfen nicht identisch sein."
     )
 
 
@@ -1568,7 +1666,8 @@ if is_long and stop_loss >= entry_price:
     valid_trade = False
 
     error_message = (
-        "Bei LONG muss der Stop-Loss unter dem Einstieg liegen."
+        "Bei einem LONG-Trade muss der "
+        "Stop-Loss unter dem Einstiegskurs liegen."
     )
 
 
@@ -1577,7 +1676,8 @@ if not is_long and stop_loss <= entry_price:
     valid_trade = False
 
     error_message = (
-        "Bei SHORT muss der Stop-Loss über dem Einstieg liegen."
+        "Bei einem SHORT-Trade muss der "
+        "Stop-Loss über dem Einstiegskurs liegen."
     )
 
 
@@ -1606,22 +1706,18 @@ if instrument in forex_pairs:
 
     if instrument == "USD/JPY":
 
-        pip_value_per_lot = 6.7
+        pip_value_per_lot = 6.70
 
     elif instrument == "USD/CAD":
 
-        pip_value_per_lot = 6.8
-
-    elif instrument == "USD/CHF":
-
-        pip_value_per_lot = 10.0
+        pip_value_per_lot = 6.80
 
     else:
 
-        pip_value_per_lot = 10.0
+        pip_value_per_lot = 10.00
 
 
-    stop_pips = safe_div(
+    stop_pips = safe_division(
         price_distance,
         pip_size
     )
@@ -1633,13 +1729,16 @@ if instrument in forex_pairs:
     )
 
 
-    lots = safe_div(
+    lots = safe_division(
         max_risk,
         risk_per_lot
     )
 
 
-    units = lots * 100000
+    units = (
+        lots
+        * 100000
+    )
 
 
     position_value = (
@@ -1648,7 +1747,7 @@ if instrument in forex_pairs:
     )
 
 
-    margin = safe_div(
+    margin = safe_division(
         position_value,
         leverage
     )
@@ -1668,19 +1767,23 @@ elif instrument == "XAU/USD":
 
     contract_size = 100.0
 
+
     risk_per_lot = (
         price_distance
         * contract_size
     )
 
 
-    lots = safe_div(
+    lots = safe_division(
         max_risk,
         risk_per_lot
     )
 
 
-    units = lots * contract_size
+    units = (
+        lots
+        * contract_size
+    )
 
 
     position_value = (
@@ -1690,13 +1793,14 @@ elif instrument == "XAU/USD":
     )
 
 
-    margin = safe_div(
+    margin = safe_division(
         position_value,
         leverage
     )
 
 
     stop_pips = price_distance
+
 
     pip_value_total = (
         lots
@@ -1717,13 +1821,14 @@ elif instrument in [
 
     value_per_point = 1.0
 
+
     risk_per_lot = (
         price_distance
         * value_per_point
     )
 
 
-    lots = safe_div(
+    lots = safe_division(
         max_risk,
         risk_per_lot
     )
@@ -1738,13 +1843,14 @@ elif instrument in [
     )
 
 
-    margin = safe_div(
+    margin = safe_division(
         position_value,
         leverage
     )
 
 
     stop_pips = price_distance
+
 
     pip_value_total = (
         lots
@@ -1763,7 +1869,8 @@ elif instrument in [
 
     risk_per_unit = price_distance
 
-    units = safe_div(
+
+    units = safe_division(
         max_risk,
         risk_per_unit
     )
@@ -1778,13 +1885,14 @@ elif instrument in [
     )
 
 
-    margin = safe_div(
+    margin = safe_division(
         position_value,
         leverage
     )
 
 
     stop_pips = price_distance
+
 
     pip_value_total = units
 
@@ -1795,7 +1903,7 @@ elif instrument in [
 
 else:
 
-    lots = safe_div(
+    lots = safe_division(
         max_risk,
         price_distance
     )
@@ -1810,13 +1918,14 @@ else:
     )
 
 
-    margin = safe_div(
+    margin = safe_division(
         position_value,
         leverage
     )
 
 
     stop_pips = price_distance
+
 
     pip_value_total = lots
 
@@ -1827,341 +1936,124 @@ else:
 
 with right_col:
 
-    st.markdown(
-        dedent(
-            """
-            <div class="cb-panel">
-
-                <div class="cb-panel-title">
-
-                    <div class="cb-panel-icon">
-                        ◎
-                    </div>
-
-                    <div>
-                        Ergebnis
-                    </div>
-
-                </div>
-            """
-        ),
-        unsafe_allow_html=True,
-    )
-
-
-    if not valid_trade:
-
-        st.error(error_message)
-
-    else:
-
-        # ----------------------------------------------------
-        # POSITION
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-result-top">
-
-                    <div class="cb-result-label">
-                        Empfohlene Position
-                    </div>
-
-                    <div class="cb-result-number">
-                        {number_de(lots, 2)} LOTS
-                    </div>
-
-                    <div class="cb-result-units">
-                        = {number_de(units, 0)} EINHEITEN
-                    </div>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
+    render_html(
+        '<div class="cb-panel">'
+        '<div class="cb-panel-title">'
+        '<div class="cb-panel-icon">◎</div>'
+        '<div>ERGEBNIS</div>'
+        '</div>'
+        '<div class="cb-result">'
+        '<div class="cb-result-label">'
+        'EMPFOHLENE POSITION'
+        '</div>'
+        + (
+            '<div class="cb-result-number">'
+            + format_number(lots, 2)
+            + ' LOTS'
+            + '</div>'
+            + '<div class="cb-result-units">'
+            + '= '
+            + format_number(units, 0)
+            + ' EINHEITEN'
+            + '</div>'
+            if valid_trade
+            else
+            '<div class="cb-error">'
+            + error_message
+            + '</div>'
         )
-
-
-        st.markdown(
-            dedent(
-                """
-                <div class="cb-gold-divider"></div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # MAX VERLUST
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Max. Verlust
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {number_de(max_risk, 2)}
-                        <span class="cb-metric-unit">
-                            {currency}
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # STOP
-        # ----------------------------------------------------
-
-        if instrument in forex_pairs:
-
-            stop_text = number_de(
-                stop_pips,
-                1
+        + '</div>'
+        + '<div class="cb-gold-divider"></div>'
+        + (
+            '<div class="cb-metric">'
+            '<span>Max. Verlust</span>'
+            '<span class="cb-metric-value">'
+            + format_number(max_risk, 2)
+            + ' <span class="cb-metric-unit">'
+            + currency
+            + '</span></span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Stop-Abstand</span>'
+            '<span class="cb-metric-value">'
+            + (
+                format_number(stop_pips, 1)
+                if instrument in forex_pairs
+                else format_number(stop_pips, 2)
             )
-
-            stop_unit = "Pips"
-
-        else:
-
-            stop_text = number_de(
-                stop_pips,
+            + ' <span class="cb-metric-unit">'
+            + (
+                'Pips'
+                if instrument in forex_pairs
+                else 'Punkte'
+            )
+            + '</span></span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Positionswert</span>'
+            '<span class="cb-metric-value">'
+            + format_number(position_value, 0)
+            + ' <span class="cb-metric-unit">'
+            + currency
+            + '</span></span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Pip-Wert</span>'
+            '<span class="cb-metric-value">'
+            + format_number(pip_value_total, 2)
+            + ' <span class="cb-metric-unit">'
+            + currency
+            + '</span></span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Risikoprozent</span>'
+            '<span class="cb-metric-value">'
+            + format_number(risk_percent, 2)
+            + ' <span class="cb-metric-unit">%</span>'
+            '</span>'
+            '</div>'
+            +
+            '<div class="cb-margin-title">'
+            '<span>⚖</span>'
+            '<span>MARGIN & HEBEL</span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Erforderliche Margin</span>'
+            '<span class="cb-metric-value">'
+            + format_number(margin, 2)
+            + ' <span class="cb-metric-unit">'
+            + currency
+            + '</span></span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Verwendeter Hebel</span>'
+            '<span class="cb-metric-value">'
+            '1 : '
+            + format_number(leverage, 0)
+            + '</span>'
+            '</div>'
+            +
+            '<div class="cb-metric">'
+            '<span>Freie Margin (geschätzt)</span>'
+            '<span class="cb-metric-value">'
+            + format_number(
+                max(account_size - margin, 0),
                 2
             )
-
-            stop_unit = "Punkte"
-
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Stop-Abstand
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {stop_text}
-                        <span class="cb-metric-unit">
-                            {stop_unit}
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
+            + ' <span class="cb-metric-unit">'
+            + currency
+            + '</span></span>'
+            '</div>'
+            if valid_trade
+            else ''
         )
-
-
-        # ----------------------------------------------------
-        # POSITIONSWERT
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Positionswert
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {number_de(position_value, 0)}
-                        <span class="cb-metric-unit">
-                            {currency}
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # PIP WERT
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Pip-Wert
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {number_de(pip_value_total, 2)}
-                        <span class="cb-metric-unit">
-                            {currency}
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # RISIKO
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Risikoprozent
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {number_de(risk_percent, 2)}
-                        <span class="cb-metric-unit">
-                            %
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # MARGIN
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                """
-                <div class="cb-margin-title">
-
-                    <span>
-                        ⚖
-                    </span>
-
-                    <span>
-                        Margin & Hebel
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # MARGIN
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Erforderliche Margin
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {number_de(margin, 2)}
-                        <span class="cb-metric-unit">
-                            {currency}
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # HEBEL
-        # ----------------------------------------------------
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Verwendeter Hebel
-                    </span>
-
-                    <span class="cb-metric-value">
-                        1 : {number_de(leverage, 0)}
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-        # ----------------------------------------------------
-        # FREIE MARGIN
-        # ----------------------------------------------------
-
-        free_margin = max(
-            account_size - margin,
-            0
-        )
-
-
-        st.markdown(
-            dedent(
-                f"""
-                <div class="cb-metric">
-
-                    <span>
-                        Freie Margin (geschätzt)
-                    </span>
-
-                    <span class="cb-metric-value">
-                        {number_de(free_margin, 2)}
-                        <span class="cb-metric-unit">
-                            {currency}
-                        </span>
-                    </span>
-
-                </div>
-                """
-            ),
-            unsafe_allow_html=True,
-        )
-
-
-    st.markdown(
-        dedent(
-            """
-            </div>
-            """
-        ),
-        unsafe_allow_html=True,
+        + '</div>'
     )
 
 
@@ -2169,116 +2061,93 @@ with right_col:
 # RISIKOÜBERSICHT
 # ============================================================
 
-risk_blocks = 30
-
-active_blocks = int(
-    min(
-        max(
-            risk_percent / 5,
-            0
-        ),
-        1
-    )
-    * risk_blocks
+risk_percentage_for_bar = min(
+    max(
+        risk_percent,
+        0.0
+    ),
+    5.0
 )
 
 
-blocks_html = ""
+circle_progress = (
+    risk_percentage_for_bar
+    / 5.0
+    * 360.0
+)
 
-for i in range(risk_blocks):
 
-    if i < active_blocks:
+active_blocks = int(
+    round(
+        risk_percentage_for_bar
+        / 5.0
+        * 30
+    )
+)
 
-        blocks_html += (
+
+risk_blocks_html = ""
+
+
+for index in range(30):
+
+    if index < active_blocks:
+
+        risk_blocks_html += (
             '<div class="cb-risk-block active"></div>'
         )
 
     else:
 
-        blocks_html += (
+        risk_blocks_html += (
             '<div class="cb-risk-block"></div>'
         )
 
 
-circle_progress = min(
-    max(risk_percent / 5 * 100, 1),
-    100
-)
-
-
-circle_degrees = circle_progress * 3.6
-
-
 # ============================================================
-# RISIKO PANEL
+# RISIKOÜBERSICHT RENDERN
 # ============================================================
 
-st.markdown(
-    dedent(
-        f"""
-        <div class="cb-risk-panel">
-
-            <div class="cb-risk-title">
-
-                <span style="font-size:28px;">
-                    ♢
-                </span>
-
-                <span>
-                    Risikoübersicht
-                </span>
-
-            </div>
-
-
-            <div class="cb-risk-content">
-
-                <div
-                    class="cb-risk-circle"
-                    style="
-                        background:
-                        conic-gradient(
-                            #E1B84F
-                            0deg
-                            {circle_degrees}deg,
-                            #343434
-                            {circle_degrees}deg
-                            360deg
-                        );
-                    "
-                >
-
-                    <div class="cb-risk-circle-text">
-                        {number_de(risk_percent, 2)} %
-                    </div>
-
-                </div>
-
-
-                <div class="cb-risk-details">
-
-                    <div class="cb-risk-money">
-                        {number_de(max_risk, 2)}
-                        {currency}
-                    </div>
-
-                    <div class="cb-risk-account">
-                        von {number_de(account_size, 2)}
-                        {currency}
-                    </div>
-
-                    <div class="cb-risk-blocks">
-                        {blocks_html}
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-        """
-    ),
-    unsafe_allow_html=True,
+render_html(
+    '<div class="cb-risk-panel">'
+    '<div class="cb-risk-title">'
+    '<span style="font-size:28px;">♢</span>'
+    '<span>RISIKOÜBERSICHT</span>'
+    '</div>'
+    '<div class="cb-risk-content">'
+    '<div class="cb-risk-circle" style="'
+    'background:conic-gradient('
+    '#E1B84F 0deg '
+    + str(circle_progress)
+    + 'deg, '
+    '#343434 '
+    + str(circle_progress)
+    + 'deg 360deg'
+    ');'
+    '">'
+    '<div class="cb-risk-circle-text">'
+    + format_number(risk_percent, 2)
+    + ' %'
+    + '</div>'
+    '</div>'
+    '<div>'
+    '<div class="cb-risk-money">'
+    + format_number(max_risk, 2)
+    + ' '
+    + currency
+    + '</div>'
+    '<div class="cb-risk-account">'
+    'von '
+    + format_number(account_size, 2)
+    + ' '
+    + currency
+    + '</div>'
+    '<div class="cb-risk-blocks">'
+    + risk_blocks_html
+    + '</div>'
+    '</div>'
+    '</div>'
+    '</div>'
 )
 
 
@@ -2286,48 +2155,27 @@ st.markdown(
 # RISIKOHINWEIS
 # ============================================================
 
-st.markdown(
-    dedent(
-        """
-        <div class="cb-warning-panel">
-
-            <div class="cb-warning-content">
-
-                <div class="cb-warning-icon">
-                    △
-                </div>
-
-                <div>
-
-                    <div class="cb-warning-title">
-                        Risikohinweis
-                    </div>
-
-                    <div class="cb-warning-text">
-
-                        CFDs sind komplexe Instrumente und bergen
-                        aufgrund der Hebelwirkung ein hohes Risiko,
-                        schnell Geld zu verlieren. 74–89 % der
-                        Kleinanlegerkonten verlieren Geld beim
-                        CFD-Handel mit diesem Anbieter.
-
-                        <br><br>
-
-                        Überlegen Sie, ob Sie verstehen, wie CFDs
-                        funktionieren und ob Sie es sich leisten
-                        können, das hohe Risiko einzugehen, Ihr Geld
-                        zu verlieren.
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-        """
-    ),
-    unsafe_allow_html=True,
+render_html(
+    '<div class="cb-warning-panel">'
+    '<div class="cb-warning-content">'
+    '<div class="cb-warning-icon">△</div>'
+    '<div>'
+    '<div class="cb-warning-title">'
+    'RISIKOHINWEIS'
+    '</div>'
+    '<div class="cb-warning-text">'
+    'CFDs sind komplexe Instrumente und bergen aufgrund '
+    'der Hebelwirkung ein hohes Risiko, schnell Geld zu '
+    'verlieren. 74–89 % der Kleinanlegerkonten verlieren '
+    'Geld beim CFD-Handel mit diesem Anbieter.'
+    '<br><br>'
+    'Überlegen Sie, ob Sie verstehen, wie CFDs funktionieren '
+    'und ob Sie es sich leisten können, das hohe Risiko '
+    'einzugehen, Ihr Geld zu verlieren.'
+    '</div>'
+    '</div>'
+    '</div>'
+    '</div>'
 )
 
 
@@ -2335,15 +2183,10 @@ st.markdown(
 # FOOTER
 # ============================================================
 
-st.markdown(
-    dedent(
-        """
-        <div class="cb-footer">
-            COUNT OR BREAK
-            &nbsp; · &nbsp;
-            PLAN. EXECUTE. SUCCEED.
-        </div>
-        """
-    ),
-    unsafe_allow_html=True,
+render_html(
+    '<div class="cb-footer">'
+    'COUNT OR BREAK'
+    '&nbsp;&nbsp;·&nbsp;&nbsp;'
+    'PLAN. EXECUTE. SUCCEED.'
+    '</div>'
 )
