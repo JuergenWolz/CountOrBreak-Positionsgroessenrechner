@@ -1,5 +1,7 @@
-import streamlit as st
 import math
+import os
+
+import streamlit as st
 
 
 # ============================================================
@@ -9,9 +11,9 @@ import math
 
 st.set_page_config(
     page_title="CountOrBreak – Positionsgrößenrechner",
-    page_icon="🧮",
+    page_icon=None,
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
 )
 
 
@@ -19,19 +21,24 @@ st.set_page_config(
 # KONFIGURATION
 # ============================================================
 
-STARTSEITE_URL = "https://countorbreak-startseite-hven69337vstysxro8rxuh.streamlit.app/"
+STARTSEITE_URL = "https://countorbreak.streamlit.app"
 
-GOLD = "#C99A2E"
-GOLD_LIGHT = "#E4B84A"
-GOLD_BRIGHT = "#FFD66B"
-GOLD_DARK = "#9B7018"
+LOGO_FILE = "countorbreak_logo.png"
 
-BG = "#050505"
-PANEL = "#0D0D0D"
-PANEL_2 = "#111111"
-BORDER = "#343434"
-TEXT = "#F1F1F1"
-TEXT_MUTED = "#B8B8B8"
+# Goldtöne an das CountOrBreak-Logo angelehnt
+GOLD = "#B88624"
+GOLD_DARK = "#8A6417"
+GOLD_DEEP = "#6F4F12"
+GOLD_LIGHT = "#D4A83A"
+GOLD_HIGHLIGHT = "#E7C15A"
+
+BACKGROUND = "#050505"
+PANEL = "#0C0C0C"
+PANEL_LIGHT = "#111111"
+BORDER = "#302A1C"
+
+TEXT = "#F2F0EA"
+TEXT_MUTED = "#B7B2A7"
 
 
 # ============================================================
@@ -42,57 +49,76 @@ st.markdown(
     f"""
     <style>
 
-    /* --------------------------------------------------------
+    /* ========================================================
        GLOBAL
-    -------------------------------------------------------- */
+       ======================================================== */
 
-    html, body, [class*="css"] {{
-        font-family: "Arial", "Helvetica Neue", sans-serif;
+    html,
+    body,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stApp"] {{
+        background: {BACKGROUND} !important;
+    }}
+
+    html,
+    body,
+    [class*="css"] {{
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            Arial,
+            Helvetica,
+            sans-serif;
     }}
 
     .stApp {{
         background:
             radial-gradient(
                 circle at 50% 0%,
-                rgba(201,154,46,0.10),
-                transparent 32%
+                rgba(184, 134, 36, 0.075),
+                transparent 34%
             ),
-            #050505;
+            {BACKGROUND} !important;
+
         color: {TEXT};
     }}
 
-    .main {{
-        background: transparent;
+    [data-testid="stHeader"] {{
+        background: transparent !important;
+    }}
+
+    [data-testid="stToolbar"] {{
+        background: transparent !important;
     }}
 
     .block-container {{
-        max-width: 1450px;
-        padding-top: 1.5rem;
-        padding-bottom: 4rem;
-        padding-left: 2rem;
-        padding-right: 2rem;
+        max-width: 1450px !important;
+
+        padding-top: 1.25rem !important;
+        padding-bottom: 4rem !important;
+
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
     }}
 
-    /* Streamlit Header entfernen */
 
-    header[data-testid="stHeader"] {{
-        background: transparent;
-    }}
+    /* ========================================================
+       ZURÜCK ZUR STARTSEITE
+       ======================================================== */
 
-    /* --------------------------------------------------------
-       ZURÜCK BUTTON
-    -------------------------------------------------------- */
-
-    .back-wrapper {{
+    .back-area {{
         margin-bottom: 30px;
     }}
 
-    .back-button {{
+    .back-link {{
         display: inline-flex;
         align-items: center;
+        justify-content: center;
+
         gap: 10px;
 
-        padding: 12px 20px;
+        padding: 11px 19px;
 
         border: 1px solid {GOLD_DARK};
         border-radius: 9px;
@@ -100,133 +126,120 @@ st.markdown(
         background:
             linear-gradient(
                 145deg,
-                rgba(25,25,25,0.98),
-                rgba(8,8,8,0.98)
+                rgba(22, 22, 22, 0.98),
+                rgba(7, 7, 7, 0.98)
             );
 
-        color: {GOLD};
-        text-decoration: none;
+        color: {GOLD} !important;
 
-        font-family: "Arial", sans-serif;
+        text-decoration: none !important;
+
+        font-family:
+            Georgia,
+            "Times New Roman",
+            serif;
+
         font-size: 15px;
         font-weight: 700;
-        letter-spacing: 1px;
 
-        transition:
-            all 0.22s ease;
+        letter-spacing: 0.8px;
 
         box-shadow:
-            0 0 0 rgba(201,154,46,0);
+            0 0 0 rgba(184, 134, 36, 0);
+
+        transition:
+            color 0.22s ease,
+            border-color 0.22s ease,
+            box-shadow 0.22s ease,
+            transform 0.22s ease;
+
+        cursor: pointer;
     }}
 
-    .back-button:hover {{
-        color: {GOLD_BRIGHT};
+    .back-link:visited {{
+        color: {GOLD} !important;
+    }}
+
+    .back-link:hover {{
+        color: {GOLD_HIGHLIGHT} !important;
+
         border-color: {GOLD_LIGHT};
 
         box-shadow:
-            0 0 18px rgba(201,154,46,0.30),
-            inset 0 0 15px rgba(201,154,46,0.06);
+            0 0 18px rgba(184, 134, 36, 0.34),
+            inset 0 0 14px rgba(184, 134, 36, 0.06);
 
         transform: translateY(-1px);
     }}
 
     .back-arrow {{
-        font-size: 20px;
+        font-family: Arial, sans-serif;
+        font-size: 19px;
         line-height: 1;
     }}
 
 
-    /* --------------------------------------------------------
-       LOGO BEREICH
-    -------------------------------------------------------- */
+    /* ========================================================
+       LOGO
+       ======================================================== */
 
-    .brand-row {{
+    .logo-area {{
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
 
-        gap: 35px;
+        width: 100%;
 
         margin-top: 5px;
         margin-bottom: 28px;
     }}
 
-    .brand-logo {{
+    .logo-frame {{
         display: flex;
-        align-items: center;
         justify-content: center;
+        align-items: center;
+
+        width: 100%;
     }}
 
-    .brand-logo img {{
-        width: 230px;
-        max-width: 100%;
+    .logo-frame img {{
+        width: 330px;
+        max-width: 72vw;
         height: auto;
 
         display: block;
 
         filter:
-            drop-shadow(0 0 10px rgba(201,154,46,0.15));
-    }}
-
-    .calculator-logo {{
-        width: 100px;
-        height: 100px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        border: 1px solid {GOLD_DARK};
-        border-radius: 17px;
-
-        background:
-            radial-gradient(
-                circle,
-                rgba(201,154,46,0.10),
-                rgba(0,0,0,0.65)
-            );
-
-        box-shadow:
-            0 0 16px rgba(201,154,46,0.20),
-            inset 0 0 20px rgba(201,154,46,0.05);
-    }}
-
-    .calculator-logo img {{
-        width: 75px;
-        height: 75px;
-        object-fit: contain;
-
-        filter:
-            drop-shadow(0 0 8px rgba(201,154,46,0.35));
+            drop-shadow(0 0 12px rgba(184, 134, 36, 0.18));
     }}
 
 
-    /* --------------------------------------------------------
-       TITEL
-    -------------------------------------------------------- */
+    /* ========================================================
+       HAUPTTITEL
+       ======================================================== */
 
     .title-card {{
         position: relative;
 
         width: 100%;
 
-        padding: 26px 35px 22px;
+        margin-bottom: 28px;
 
-        margin-bottom: 25px;
+        padding: 27px 32px 24px;
 
         border: 1px solid {GOLD_DARK};
-        border-radius: 14px;
+        border-radius: 15px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(24,24,24,0.96),
-                rgba(7,7,7,0.98)
+                rgba(19, 19, 19, 0.97),
+                rgba(6, 6, 6, 0.99)
             );
 
         box-shadow:
-            0 0 16px rgba(201,154,46,0.10),
-            inset 0 0 25px rgba(255,255,255,0.015);
+            0 0 18px rgba(184, 134, 36, 0.08),
+            inset 0 0 28px rgba(255, 255, 255, 0.012);
 
         text-align: center;
 
@@ -235,10 +248,12 @@ st.markdown(
 
     .title-card::before {{
         content: "";
+
         position: absolute;
 
-        left: 0;
-        right: 0;
+        left: 5%;
+        right: 5%;
+
         top: 50%;
 
         height: 1px;
@@ -247,11 +262,11 @@ st.markdown(
             linear-gradient(
                 90deg,
                 transparent,
-                rgba(201,154,46,0.45),
+                rgba(184, 134, 36, 0.30),
                 transparent
             );
 
-        z-index: 0;
+        pointer-events: none;
     }}
 
     .title-row {{
@@ -270,6 +285,7 @@ st.markdown(
         flex: 1;
 
         max-width: 180px;
+
         height: 1px;
 
         background:
@@ -280,10 +296,10 @@ st.markdown(
             );
 
         box-shadow:
-            0 0 8px rgba(201,154,46,0.35);
+            0 0 8px rgba(184, 134, 36, 0.25);
     }}
 
-    .title-line.right {{
+    .title-line-right {{
         background:
             linear-gradient(
                 90deg,
@@ -296,11 +312,11 @@ st.markdown(
         color: {GOLD_LIGHT};
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
-        font-size: clamp(28px, 4vw, 46px);
+        font-size: clamp(28px, 4vw, 48px);
 
         font-weight: 700;
 
@@ -309,118 +325,124 @@ st.markdown(
         text-transform: uppercase;
 
         text-shadow:
-            0 0 10px rgba(201,154,46,0.20);
+            0 0 9px rgba(184, 134, 36, 0.18);
     }}
 
     .subtitle {{
         position: relative;
 
-        margin-top: 5px;
+        margin-top: 8px;
 
-        color: #D7C18A;
+        color: #C7AD70;
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
-        font-size: 20px;
+        font-size: 19px;
 
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
 
         z-index: 1;
     }}
 
 
-    /* --------------------------------------------------------
-       PANELS
-    -------------------------------------------------------- */
+    /* ========================================================
+       STREAMLIT COLUMNS
+       ======================================================== */
 
-    .panel {{
-        position: relative;
+    [data-testid="stHorizontalBlock"] {{
+        gap: 1.4rem;
+    }}
+
+
+    /* ========================================================
+       PANELS
+       ======================================================== */
+
+    .panel-card {{
+        width: 100%;
+
+        min-height: 700px;
+
+        padding: 25px 28px;
+
+        border: 1px solid {BORDER};
+        border-radius: 15px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(19,19,19,0.97),
-                rgba(7,7,7,0.99)
+                rgba(17, 17, 17, 0.97),
+                rgba(7, 7, 7, 0.99)
             );
 
-        border: 1px solid {BORDER};
-
-        border-radius: 15px;
-
-        padding: 25px 28px;
-
-        min-height: 720px;
-
         box-shadow:
-            inset 0 0 30px rgba(255,255,255,0.008),
-            0 8px 30px rgba(0,0,0,0.30);
+            inset 0 0 30px rgba(255, 255, 255, 0.008),
+            0 8px 30px rgba(0, 0, 0, 0.28);
     }}
 
-    .panel:hover {{
-        border-color: #4A4A4A;
-    }}
-
-    .panel-title {{
+    .panel-header {{
         display: flex;
         align-items: center;
 
         gap: 12px;
 
-        margin-bottom: 28px;
+        margin-bottom: 25px;
 
         color: {GOLD};
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
         font-size: 23px;
 
-        font-weight: 600;
+        font-weight: 700;
 
         letter-spacing: 0.7px;
 
         text-transform: uppercase;
     }}
 
-    .panel-icon {{
-        width: 28px;
-        height: 28px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
+    .panel-header-symbol {{
         color: {GOLD};
 
-        font-size: 22px;
+        font-family:
+            Georgia,
+            "Times New Roman",
+            serif;
+
+        font-size: 23px;
 
         text-shadow:
-            0 0 9px rgba(201,154,46,0.45);
+            0 0 8px rgba(184, 134, 36, 0.45);
     }}
 
 
-    /* --------------------------------------------------------
-       INPUT BEREICH
-    -------------------------------------------------------- */
+    /* ========================================================
+       STREAMLIT INPUT LABELS
+       ======================================================== */
 
-    .field-label {{
-        color: {TEXT};
+    [data-testid="stWidgetLabel"] p {{
+        color: {TEXT} !important;
 
-        font-size: 15px;
+        font-size: 14px !important;
 
-        margin-top: 15px;
-        margin-bottom: 7px;
+        font-weight: 500 !important;
     }}
+
+
+    /* ========================================================
+       SELECTBOX
+       ======================================================== */
 
     div[data-baseweb="select"] > div {{
         background-color: #111111 !important;
 
-        border: 1px solid #514421 !important;
+        border: 1px solid #40361F !important;
 
         border-radius: 8px !important;
 
@@ -428,13 +450,25 @@ st.markdown(
     }}
 
     div[data-baseweb="select"] > div:hover {{
-        border-color: {GOLD} !important;
+        border-color: {GOLD_DARK} !important;
     }}
+
+    div[data-baseweb="select"] > div:focus-within {{
+        border-color: {GOLD} !important;
+
+        box-shadow:
+            0 0 0 1px {GOLD} !important;
+    }}
+
+
+    /* ========================================================
+       NUMBER INPUT
+       ======================================================== */
 
     div[data-baseweb="input"] > div {{
         background-color: #111111 !important;
 
-        border: 1px solid #514421 !important;
+        border: 1px solid #40361F !important;
 
         border-radius: 8px !important;
     }}
@@ -450,105 +484,93 @@ st.markdown(
         color: {TEXT} !important;
     }}
 
-    /* --------------------------------------------------------
-       RICHTUNG
-    -------------------------------------------------------- */
 
-    .direction-label {{
-        color: {TEXT};
+    /* ========================================================
+       RADIO BUTTON
+       ======================================================== */
 
-        font-size: 15px;
-
-        margin-top: 15px;
-        margin-bottom: 8px;
+    div[role="radiogroup"] {{
+        gap: 10px !important;
     }}
 
-    .stButton > button {{
-        width: 100%;
+    div[role="radiogroup"] label {{
+        color: {TEXT} !important;
+    }}
 
-        min-height: 44px;
+
+    /* ========================================================
+       BUTTONS
+       ======================================================== */
+
+    .stButton > button {{
+        width: 100% !important;
+
+        min-height: 44px !important;
 
         background:
             linear-gradient(
                 145deg,
-                #141414,
-                #0A0A0A
+                #151515,
+                #090909
             ) !important;
 
         color: {TEXT} !important;
 
-        border: 1px solid #444444 !important;
+        border: 1px solid #454545 !important;
 
         border-radius: 8px !important;
 
         font-weight: 600 !important;
 
         transition:
-            all 0.20s ease !important;
+            all 0.22s ease !important;
     }}
 
     .stButton > button:hover {{
+        color: {GOLD_HIGHLIGHT} !important;
+
         border-color: {GOLD} !important;
 
-        color: {GOLD_LIGHT} !important;
-
         box-shadow:
-            0 0 12px rgba(201,154,46,0.20) !important;
+            0 0 13px rgba(184, 134, 36, 0.24) !important;
     }}
 
 
-    /* --------------------------------------------------------
+    /* ========================================================
        ERGEBNIS
-    -------------------------------------------------------- */
-
-    .result-heading {{
-        display: flex;
-        align-items: center;
-
-        gap: 12px;
-
-        margin-bottom: 25px;
-
-        color: {GOLD};
-
-        font-family:
-            "Georgia",
-            "Times New Roman",
-            serif;
-
-        font-size: 23px;
-
-        text-transform: uppercase;
-    }}
+       ======================================================== */
 
     .result-title {{
         display: flex;
         align-items: center;
         justify-content: center;
 
-        gap: 20px;
+        gap: 18px;
 
-        margin-top: 15px;
+        margin-top: 8px;
         margin-bottom: 8px;
 
         color: {GOLD_LIGHT};
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
-        font-size: 23px;
+        font-size: 22px;
 
-        font-weight: 600;
+        font-weight: 700;
+
+        letter-spacing: 0.5px;
 
         text-transform: uppercase;
 
-        letter-spacing: 0.5px;
+        text-align: center;
     }}
 
-    .result-title-line {{
+    .result-line {{
         width: 90px;
+
         height: 1px;
 
         background:
@@ -559,7 +581,7 @@ st.markdown(
             );
     }}
 
-    .result-title-line.right {{
+    .result-line-right {{
         background:
             linear-gradient(
                 90deg,
@@ -569,63 +591,69 @@ st.markdown(
     }}
 
     .result-lots {{
-        text-align: center;
-
         margin-top: 18px;
 
-        color: {GOLD_BRIGHT};
+        color: {GOLD_HIGHLIGHT};
 
         font-family:
-            "Arial",
-            sans-serif;
+            Georgia,
+            "Times New Roman",
+            serif;
 
-        font-size: clamp(48px, 7vw, 76px);
+        font-size: clamp(50px, 6vw, 76px);
 
-        font-weight: 800;
+        font-weight: 700;
 
-        letter-spacing: -1px;
+        line-height: 1.05;
+
+        letter-spacing: 0.5px;
+
+        text-align: center;
 
         text-shadow:
-            0 0 10px rgba(255,214,107,0.35),
-            0 0 28px rgba(201,154,46,0.20);
+            0 0 12px rgba(231, 193, 90, 0.28),
+            0 0 30px rgba(184, 134, 36, 0.16);
     }}
 
     .result-units {{
-        text-align: center;
-
-        color: #EAEAEA;
-
-        font-size: 25px;
-
+        margin-top: 8px;
         margin-bottom: 25px;
+
+        color: #D4D0C8;
+
+        font-size: 21px;
+
+        text-align: center;
     }}
 
     .result-divider {{
         height: 1px;
 
-        margin: 15px 0;
+        margin: 16px 0;
 
         background:
             linear-gradient(
                 90deg,
                 transparent,
-                rgba(201,154,46,0.25),
+                rgba(184, 134, 36, 0.28),
                 transparent
             );
     }}
 
     .result-row {{
         display: flex;
-        justify-content: space-between;
+
         align-items: center;
+        justify-content: space-between;
 
-        padding: 13px 0;
+        padding: 12px 0;
 
-        border-bottom: 1px solid rgba(255,255,255,0.08);
+        border-bottom:
+            1px solid rgba(255, 255, 255, 0.07);
 
         color: {TEXT};
 
-        font-size: 16px;
+        font-size: 15px;
     }}
 
     .result-value {{
@@ -637,60 +665,75 @@ st.markdown(
     }}
 
     .result-section {{
-        margin-top: 28px;
-        margin-bottom: 10px;
+        margin-top: 27px;
+        margin-bottom: 9px;
 
         color: {GOLD};
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
-        font-size: 20px;
+        font-size: 19px;
+
+        font-weight: 700;
+
+        letter-spacing: 0.4px;
 
         text-transform: uppercase;
     }}
 
 
-    /* --------------------------------------------------------
-       RISIKO ÜBERSICHT
-    -------------------------------------------------------- */
+    /* ========================================================
+       RISIKOÜBERSICHT
+       ======================================================== */
 
-    .risk-panel {{
+    .risk-card {{
         margin-top: 25px;
 
-        padding: 25px 28px;
+        padding: 24px 28px;
 
         border: 1px solid {BORDER};
-
         border-radius: 15px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(19,19,19,0.97),
-                rgba(7,7,7,0.99)
+                rgba(17, 17, 17, 0.97),
+                rgba(7, 7, 7, 0.99)
             );
+
+        box-shadow:
+            inset 0 0 25px rgba(255, 255, 255, 0.008);
     }}
 
     .risk-title {{
         color: {GOLD};
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
-        font-size: 21px;
+        font-size: 20px;
+
+        font-weight: 700;
+
+        letter-spacing: 0.6px;
 
         text-transform: uppercase;
 
-        margin-bottom: 18px;
+        margin-bottom: 16px;
     }}
 
     .risk-number {{
         color: {GOLD_LIGHT};
+
+        font-family:
+            Georgia,
+            "Times New Roman",
+            serif;
 
         font-size: 28px;
 
@@ -698,30 +741,70 @@ st.markdown(
     }}
 
     .risk-sub {{
-        color: {TEXT};
+        color: {TEXT_MUTED};
 
-        font-size: 15px;
+        font-size: 14px;
+
+        margin-top: 2px;
+    }}
+
+    .risk-bar-background {{
+        width: 100%;
+
+        height: 11px;
+
+        margin-top: 18px;
+
+        border: 1px solid #343434;
+        border-radius: 6px;
+
+        background: #202020;
+
+        overflow: hidden;
+    }}
+
+    .risk-bar {{
+        height: 100%;
+
+        border-radius: 5px;
+
+        background:
+            linear-gradient(
+                90deg,
+                {GOLD_DARK},
+                {GOLD_LIGHT}
+            );
+
+        box-shadow:
+            0 0 12px rgba(184, 134, 36, 0.30);
+    }}
+
+    .risk-percent {{
+        margin-top: 8px;
+
+        color: {GOLD_LIGHT};
+
+        font-size: 14px;
     }}
 
 
-    /* --------------------------------------------------------
+    /* ========================================================
        RISIKOHINWEIS
-    -------------------------------------------------------- */
+       ======================================================== */
 
-    .warning {{
+    .warning-card {{
         margin-top: 20px;
 
         padding: 20px 24px;
 
-        border: 1px solid {GOLD_DARK};
-
+        border: 1px solid {GOLD_DEEP};
         border-radius: 14px;
 
         background:
             linear-gradient(
                 145deg,
-                rgba(24,20,10,0.85),
-                rgba(8,8,8,0.96)
+                rgba(23, 19, 10, 0.82),
+                rgba(8, 8, 8, 0.97)
             );
     }}
 
@@ -729,112 +812,108 @@ st.markdown(
         color: {GOLD_LIGHT};
 
         font-family:
-            "Georgia",
+            Georgia,
             "Times New Roman",
             serif;
 
-        font-size: 20px;
+        font-size: 19px;
 
-        font-weight: 600;
+        font-weight: 700;
 
         margin-bottom: 8px;
     }}
 
     .warning-text {{
-        color: #D6D6D6;
+        color: #D1CEC7;
 
-        font-size: 14px;
+        font-size: 13px;
 
-        line-height: 1.6;
+        line-height: 1.65;
     }}
 
 
-    /* --------------------------------------------------------
-       RESPONSIVE
-    -------------------------------------------------------- */
+    /* ========================================================
+       MOBILE
+       ======================================================== */
 
     @media (max-width: 900px) {{
 
         .block-container {{
-            padding-left: 1rem;
-            padding-right: 1rem;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
         }}
 
-        .brand-row {{
-            gap: 20px;
-        }}
-
-        .brand-logo img {{
-            width: 180px;
-        }}
-
-        .calculator-logo {{
-            width: 80px;
-            height: 80px;
-        }}
-
-        .calculator-logo img {{
-            width: 60px;
-            height: 60px;
+        .logo-frame img {{
+            width: 290px;
+            max-width: 80vw;
         }}
 
         .title-line {{
             display: none;
         }}
 
-        .panel {{
+        .title-card {{
+            padding-left: 18px;
+            padding-right: 18px;
+        }}
+
+        .panel-card {{
             min-height: auto;
         }}
 
         .result-lots {{
-            font-size: 52px;
+            font-size: 55px;
         }}
     }}
 
+
     @media (max-width: 600px) {{
 
-        .brand-row {{
-            gap: 12px;
+        .block-container {{
+            padding-top: 0.75rem !important;
         }}
 
-        .brand-logo img {{
-            width: 150px;
+        .back-link {{
+            padding: 10px 15px;
+
+            font-size: 14px;
         }}
 
-        .calculator-logo {{
-            width: 68px;
-            height: 68px;
-        }}
-
-        .calculator-logo img {{
-            width: 50px;
-            height: 50px;
+        .logo-frame img {{
+            width: 240px;
+            max-width: 82vw;
         }}
 
         .main-title {{
-            font-size: 27px;
+            font-size: 28px;
+
+            letter-spacing: 1px;
         }}
 
         .subtitle {{
             font-size: 16px;
         }}
 
-        .panel {{
-            padding: 20px 18px;
+        .panel-card {{
+            padding: 21px 18px;
         }}
 
         .result-lots {{
-            font-size: 45px;
+            font-size: 46px;
         }}
 
         .result-units {{
-            font-size: 20px;
+            font-size: 18px;
+        }}
+
+        .result-line {{
+            display: none;
         }}
     }}
 
     </style>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -844,47 +923,47 @@ st.markdown(
 
 st.markdown(
     f"""
-    <div class="back-wrapper">
+    <div class="back-area">
         <a
-            class="back-button"
+            class="back-link"
             href="{STARTSEITE_URL}"
             target="_self"
+            rel="noopener"
         >
             <span class="back-arrow">←</span>
             <span>ZURÜCK ZUR STARTSEITE</span>
         </a>
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
 # ============================================================
-# LOGO + RECHNER ICON
+# COUNTORBREAK LOGO
 # ============================================================
 
-st.markdown(
-    """
-    <div class="brand-row">
+if os.path.exists(LOGO_FILE):
+    st.markdown('<div class="logo-area">', unsafe_allow_html=True)
 
-        <div class="brand-logo">
-            <img
-                src="logo.png"
-                alt="CountOrBreak Logo"
-            >
-        </div>
+    st.markdown(
+        '<div class="logo-frame">',
+        unsafe_allow_html=True,
+    )
 
-        <div class="calculator-logo">
-            <img
-                src="rechner.png"
-                alt="Positionsgrößenrechner"
-            >
-        </div>
+    st.image(
+        LOGO_FILE,
+        width=330,
+    )
 
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+else:
+    st.warning(
+        f"Die Datei '{LOGO_FILE}' wurde nicht gefunden. "
+        "Bitte stelle sicher, dass sie im Repository neben app.py liegt."
+    )
 
 
 # ============================================================
@@ -903,7 +982,7 @@ st.markdown(
                 POSITIONSGRÖSSENRECHNER
             </div>
 
-            <div class="title-line right"></div>
+            <div class="title-line title-line-right"></div>
 
         </div>
 
@@ -913,7 +992,7 @@ st.markdown(
 
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -921,34 +1000,31 @@ st.markdown(
 # HAUPTBEREICH
 # ============================================================
 
-left, right = st.columns([1, 1.45], gap="large")
+left, right = st.columns(
+    [1, 1.45],
+    gap="large",
+)
 
 
 # ============================================================
-# LINKES PANEL – TRADE EINGABEN
+# LINKES PANEL
+# TRADE-EINGABEN
 # ============================================================
 
 with left:
 
     st.markdown(
         """
-        <div class="panel">
+        <div class="panel-card">
 
-            <div class="panel-title">
-
-                <div class="panel-icon">
-                    ⚖
-                </div>
-
-                <div>
-                    TRADE-EINGABEN
-                </div>
-
+            <div class="panel-header">
+                <span class="panel-header-symbol">⚖</span>
+                <span>TRADE-EINGABEN</span>
             </div>
 
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     instrument = st.selectbox(
@@ -966,15 +1042,18 @@ with left:
             "NAS100",
             "GER40",
             "SPX500",
-            "UK100"
+            "UK100",
         ],
-        index=0
+        index=0,
     )
 
     direction = st.radio(
         "Richtung",
-        ["↗ LONG", "↘ SHORT"],
-        horizontal=True
+        [
+            "↗ LONG",
+            "↘ SHORT",
+        ],
+        horizontal=True,
     )
 
     account_size = st.number_input(
@@ -982,7 +1061,7 @@ with left:
         min_value=0.0,
         value=10000.0,
         step=100.0,
-        format="%.2f"
+        format="%.2f",
     )
 
     risk_percent = st.number_input(
@@ -991,7 +1070,7 @@ with left:
         max_value=100.0,
         value=1.0,
         step=0.1,
-        format="%.2f"
+        format="%.2f",
     )
 
     entry_price = st.number_input(
@@ -999,7 +1078,7 @@ with left:
         min_value=0.00001,
         value=1.17000,
         step=0.00001,
-        format="%.5f"
+        format="%.5f",
     )
 
     stop_price = st.number_input(
@@ -1007,13 +1086,18 @@ with left:
         min_value=0.00001,
         value=1.16500,
         step=0.00001,
-        format="%.5f"
+        format="%.5f",
     )
 
     account_currency = st.selectbox(
         "Kontowährung",
-        ["EUR", "USD", "GBP", "CHF"],
-        index=0
+        [
+            "EUR",
+            "USD",
+            "GBP",
+            "CHF",
+        ],
+        index=0,
     )
 
     leverage = st.number_input(
@@ -1021,206 +1105,223 @@ with left:
         min_value=1,
         max_value=1000,
         value=30,
-        step=1
+        step=1,
     )
 
-    # ========================================================
-    # CFD PARAMETER
-    # ========================================================
 
-    if instrument in [
-        "EUR/USD",
-        "GBP/USD",
-        "AUD/USD",
-        "NZD/USD"
-    ]:
-        contract_size = 100000
-        pip_size = 0.0001
+# ============================================================
+# INSTRUMENT PARAMETER
+# ============================================================
 
-        # Standard-FX-Pip-Wert pro Standard-Lot
-        if instrument in ["EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD"]:
-            pip_value_per_lot = 10.0
+if instrument in [
+    "EUR/USD",
+    "GBP/USD",
+    "AUD/USD",
+    "NZD/USD",
+]:
 
-    elif instrument in ["USD/JPY"]:
-        contract_size = 100000
-        pip_size = 0.01
-        pip_value_per_lot = 6.8
+    contract_size = 100000
+    pip_size = 0.0001
+    pip_value_per_lot = 10.0
 
-    elif instrument in ["USD/CAD", "USD/CHF"]:
-        contract_size = 100000
-        pip_size = 0.0001
-        pip_value_per_lot = 7.2
+elif instrument == "USD/JPY":
 
-    elif instrument == "XAU/USD":
-        contract_size = 100
-        pip_size = 0.01
-        pip_value_per_lot = 1.0
+    contract_size = 100000
+    pip_size = 0.01
+    pip_value_per_lot = 6.8
 
-    elif instrument in ["US30", "NAS100", "GER40", "SPX500", "UK100"]:
-        contract_size = 1
-        pip_size = 1.0
-        pip_value_per_lot = 1.0
+elif instrument in [
+    "USD/CAD",
+    "USD/CHF",
+]:
 
-    else:
-        contract_size = 100000
-        pip_size = 0.0001
-        pip_value_per_lot = 10.0
+    contract_size = 100000
+    pip_size = 0.0001
+    pip_value_per_lot = 7.2
+
+elif instrument == "XAU/USD":
+
+    contract_size = 100
+    pip_size = 0.01
+    pip_value_per_lot = 1.0
+
+elif instrument in [
+    "US30",
+    "NAS100",
+    "GER40",
+    "SPX500",
+    "UK100",
+]:
+
+    contract_size = 1
+    pip_size = 1.0
+    pip_value_per_lot = 1.0
+
+else:
+
+    contract_size = 100000
+    pip_size = 0.0001
+    pip_value_per_lot = 10.0
 
 
 # ============================================================
 # BERECHNUNG
 # ============================================================
 
-    risk_amount = account_size * (risk_percent / 100)
+risk_amount = account_size * (risk_percent / 100.0)
 
-    stop_distance = abs(entry_price - stop_price)
+stop_distance = abs(entry_price - stop_price)
 
-    if stop_distance <= 0:
-        stop_distance = pip_size
+if stop_distance <= 0:
+    stop_distance = pip_size
 
-    stop_pips = stop_distance / pip_size
+stop_pips = stop_distance / pip_size
 
-    if stop_pips <= 0:
-        stop_pips = 1
+if stop_pips <= 0:
+    stop_pips = 1.0
 
-    lots = risk_amount / (stop_pips * pip_value_per_lot)
+raw_lots = risk_amount / (
+    stop_pips * pip_value_per_lot
+)
 
-    # sinnvolle Begrenzung
-    lots = max(0.0, lots)
+raw_lots = max(0.0, raw_lots)
 
-    # Pepperstone typische Lotschritte
-    lots_rounded = math.floor(lots / 0.01) * 0.01
+# Auf 0,01 Lot abrunden
+lots_rounded = math.floor(
+    raw_lots / 0.01
+) * 0.01
 
-    if lots_rounded < 0.01:
-        lots_rounded = 0.01
+if lots_rounded < 0.01:
+    lots_rounded = 0.01
 
-    units = lots_rounded * contract_size
+units = lots_rounded * contract_size
 
-    position_value = units * entry_price
+position_value = units * entry_price
 
+if leverage > 0:
     margin = position_value / leverage
+else:
+    margin = position_value
 
-    free_margin = max(0.0, account_size - margin)
+free_margin = max(
+    0.0,
+    account_size - margin,
+)
 
+if account_size > 0:
     used_leverage = (
         position_value / account_size
-        if account_size > 0
-        else 0
     )
+else:
+    used_leverage = 0.0
 
 
 # ============================================================
-# RECHTES PANEL – ERGEBNIS
+# RECHTES PANEL
+# ERGEBNIS
 # ============================================================
 
 with right:
 
     st.markdown(
         """
-        <div class="panel">
+        <div class="panel-card">
 
-            <div class="result-heading">
-
-                <div class="panel-icon">
-                    ◎
-                </div>
-
-                <div>
-                    ERGEBNIS
-                </div>
-
+            <div class="panel-header">
+                <span class="panel-header-symbol">◎</span>
+                <span>ERGEBNIS</span>
             </div>
 
             <div class="result-title">
 
-                <div class="result-title-line"></div>
+                <div class="result-line"></div>
 
                 <div>
                     EMPFOHLENE POSITION
                 </div>
 
-                <div class="result-title-line right"></div>
+                <div class="result-line result-line-right"></div>
 
-            </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown(
-        f"""
-            <div class="result-lots">
-                {lots_rounded:.2f} LOTS
-            </div>
-
-            <div class="result-units">
-                = {units:,.0f} EINHEITEN
-            </div>
-
-            <div class="result-divider"></div>
-
-            <div class="result-row">
-                <span>Max. Verlust</span>
-                <span class="result-value">
-                    {risk_amount:,.2f} {account_currency}
-                </span>
-            </div>
-
-            <div class="result-row">
-                <span>Stop-Abstand</span>
-                <span class="result-value">
-                    {stop_pips:,.1f} Pips
-                </span>
-            </div>
-
-            <div class="result-row">
-                <span>Positionswert</span>
-                <span class="result-value">
-                    {position_value:,.2f} {account_currency}
-                </span>
-            </div>
-
-            <div class="result-row">
-                <span>Pip-Wert</span>
-                <span class="result-value">
-                    {pip_value_per_lot:,.2f} {account_currency}
-                </span>
-            </div>
-
-            <div class="result-row">
-                <span>Risikoprozent</span>
-                <span class="result-value">
-                    {risk_percent:.2f} %
-                </span>
-            </div>
-
-            <div class="result-section">
-                ⚖ &nbsp; MARGIN &amp; HEBEL
-            </div>
-
-            <div class="result-row">
-                <span>Erforderliche Margin</span>
-                <span class="result-value">
-                    {margin:,.2f} {account_currency}
-                </span>
-            </div>
-
-            <div class="result-row">
-                <span>Verwendeter Hebel</span>
-                <span class="result-value">
-                    1 : {leverage}
-                </span>
-            </div>
-
-            <div class="result-row">
-                <span>Freie Margin (geschätzt)</span>
-                <span class="result-value">
-                    {free_margin:,.2f} {account_currency}
-                </span>
             </div>
 
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="result-lots">
+            {lots_rounded:.2f} LOTS
+        </div>
+
+        <div class="result-units">
+            = {units:,.0f} EINHEITEN
+        </div>
+
+        <div class="result-divider"></div>
+
+        <div class="result-row">
+            <span>Max. Verlust</span>
+            <span class="result-value">
+                {risk_amount:,.2f} {account_currency}
+            </span>
+        </div>
+
+        <div class="result-row">
+            <span>Stop-Abstand</span>
+            <span class="result-value">
+                {stop_pips:,.1f} Pips
+            </span>
+        </div>
+
+        <div class="result-row">
+            <span>Positionswert</span>
+            <span class="result-value">
+                {position_value:,.2f} {account_currency}
+            </span>
+        </div>
+
+        <div class="result-row">
+            <span>Pip-Wert</span>
+            <span class="result-value">
+                {pip_value_per_lot:,.2f} {account_currency}
+            </span>
+        </div>
+
+        <div class="result-row">
+            <span>Risikoprozent</span>
+            <span class="result-value">
+                {risk_percent:.2f} %
+            </span>
+        </div>
+
+        <div class="result-section">
+            MARGIN &amp; HEBEL
+        </div>
+
+        <div class="result-row">
+            <span>Erforderliche Margin</span>
+            <span class="result-value">
+                {margin:,.2f} {account_currency}
+            </span>
+        </div>
+
+        <div class="result-row">
+            <span>Verwendeter Hebel</span>
+            <span class="result-value">
+                1 : {leverage}
+            </span>
+        </div>
+
+        <div class="result-row">
+            <span>Freie Margin (geschätzt)</span>
+            <span class="result-value">
+                {free_margin:,.2f} {account_currency}
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -1228,14 +1329,19 @@ with right:
 # RISIKOÜBERSICHT
 # ============================================================
 
-risk_ratio = min(risk_percent / 5.0, 1.0)
+risk_ratio = min(
+    max(risk_percent / 5.0, 0.0),
+    1.0,
+)
+
+risk_width = risk_ratio * 100.0
 
 st.markdown(
     f"""
-    <div class="risk-panel">
+    <div class="risk-card">
 
         <div class="risk-title">
-            🛡 &nbsp; RISIKOÜBERSICHT
+            RISIKOÜBERSICHT
         </div>
 
         <div class="risk-number">
@@ -1246,42 +1352,20 @@ st.markdown(
             von {account_size:,.2f} {account_currency}
         </div>
 
-        <div style="
-            margin-top:18px;
-            height:12px;
-            width:100%;
-            border-radius:6px;
-            background:#242424;
-            overflow:hidden;
-            border:1px solid #333333;
-        ">
-
-            <div style="
-                width:{risk_ratio * 100:.1f}%;
-                height:100%;
-                background:linear-gradient(
-                    90deg,
-                    {GOLD_DARK},
-                    {GOLD_LIGHT}
-                );
-                box-shadow:
-                    0 0 12px rgba(201,154,46,0.35);
-            ">
-            </div>
-
+        <div class="risk-bar-background">
+            <div
+                class="risk-bar"
+                style="width: {risk_width:.1f}%"
+            ></div>
         </div>
 
-        <div style="
-            margin-top:8px;
-            color:{GOLD_LIGHT};
-            font-size:14px;
-        ">
+        <div class="risk-percent">
             Risiko: {risk_percent:.2f} %
         </div>
 
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
 
 
@@ -1291,7 +1375,7 @@ st.markdown(
 
 st.markdown(
     """
-    <div class="warning">
+    <div class="warning-card">
 
         <div class="warning-title">
             ⚠ &nbsp; RISIKOHINWEIS
@@ -1309,10 +1393,5 @@ st.markdown(
 
     </div>
     """,
-    unsafe_allow_html=True
+    unsafe_allow_html=True,
 )
-
-
-# ============================================================
-# ENDE
-# ============================================================
